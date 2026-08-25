@@ -67,7 +67,18 @@ pub enum Unrated {
 pub fn find_tier_sink(team: &Value, pinned: Option<&str>) -> Option<TierSink> {
     if let Some(path) = pinned.filter(|path| !path.is_empty()) {
         let value = team.path(path)?;
-        return classify_sink(value).map(|shape| TierSink { path: path.to_string(), shape });
+        // A pinned path is an explicit instruction. Infer the shape as best
+        // we can instead of refusing over an unexpected value.
+        let shape = classify_sink(value).or_else(|| {
+            value.as_object().map(|map| {
+                if map.values().all(|entry| entry.as_usize().is_some()) {
+                    SinkShape::MapOfIndices
+                } else {
+                    SinkShape::MapOfLabels
+                }
+            })
+        })?;
+        return Some(TierSink { path: path.to_string(), shape });
     }
     let mut found = Vec::new();
     search_sink(team, "", &mut found);
@@ -95,7 +106,19 @@ fn search_sink(value: &Value, prefix: &str, found: &mut Vec<TierSink>) {
 fn classify_sink(value: &Value) -> Option<SinkShape> {
     match value {
         Value::Obj(map) if !map.is_empty() => {
-            if map.values().all(|entry| entry.as_str().is_some_and(is_tier_label)) {
+            // Tolerant on purpose. A save that another tier mod has already
+            // touched carries entries outside S/A/B/C/D - the schema has no
+            // "no tier" value, so mods invent one ("", "-", "None"). Demanding
+            // every entry be a tier label made the whole field unrecognisable
+            // over a single such entry, which is how v0.2 came up empty on a
+            // previously modded team while reading pristine AI teams fine.
+            let strings = map.values().all(|entry| {
+                matches!(entry, Value::Str(_) | Value::Null)
+            });
+            let labelled = map.values().filter(|entry| {
+                entry.as_str().is_some_and(is_tier_label)
+            }).count();
+            if strings && labelled > 0 {
                 return Some(SinkShape::MapOfLabels);
             }
             map.values()
@@ -226,6 +249,55 @@ mod tests {
                 Value::parse(&format!(r#"{{"{key}":{{"a":"S","b":"D"}}}}"#)).unwrap();
             assert!(find_tier_sink(&doc, None).is_some(), "missed {key}");
         }
+    }
+
+    #[test]
+    fn a_map_another_mod_left_a_no_tier_value_in_is_still_recognised() {
+        // The schema has no "no tier" value, so a mod that wants one invents
+        // it. Demanding every entry be S/A/B/C/D made a single such entry
+        // hide the entire field.
+        for sentinel in [r#""""#, r#""-""#, r#""None""#, r#""No Tier""#, "null"] {
+            let doc = Value::parse(&format!(
+                r#"{{"champion_tiers":{{"a":"S","b":"C","c":{sentinel},"d":"D"}}}}"#
+            ))
+            .unwrap();
+            let sink = find_tier_sink(&doc, None)
+                .unwrap_or_else(|| panic!("sentinel {sentinel} hid the field"));
+            assert_eq!(sink.shape, SinkShape::MapOfLabels);
+        }
+    }
+
+    #[test]
+    fn a_map_with_no_tier_label_at_all_is_not_a_tier_list() {
+        // Tolerance has a floor: something merely string-valued next to a
+        // "tier"-ish key must not be adopted.
+        let doc =
+            Value::parse(r#"{"tier_notes":{"a":"needs work","b":"solid","c":"unknown"}}"#).unwrap();
+        assert_eq!(find_tier_sink(&doc, None), None);
+    }
+
+    #[test]
+    fn a_foreign_value_survives_a_write_that_does_not_rate_it() {
+        let doc =
+            Value::parse(r#"{"champion_tiers":{"a":"S","b":"","c":"D"}}"#).unwrap();
+        let list = [assignment("a", Tier::B)];
+        let written = Value::parse(&encode_assignment(
+            SinkShape::MapOfLabels,
+            &list,
+            doc.path(KNOWN_TIER_PATH),
+            Unrated::Keep,
+        ))
+        .unwrap();
+        assert_eq!(written.get("a").unwrap().as_str(), Some("B"));
+        assert_eq!(written.get("b").unwrap().as_str(), Some(""));
+        assert_eq!(written.get("c").unwrap().as_str(), Some("D"));
+    }
+
+    #[test]
+    fn a_pinned_path_is_used_even_when_the_shape_is_unfamiliar() {
+        let doc = Value::parse(r#"{"weird":{"a":"?","b":"??"}}"#).unwrap();
+        let sink = find_tier_sink(&doc, Some("weird")).expect("pinned path honoured");
+        assert_eq!(sink.shape, SinkShape::MapOfLabels);
     }
 
     #[test]

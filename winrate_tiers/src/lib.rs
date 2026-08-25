@@ -190,31 +190,68 @@ impl TierExtension {
         let pinned = (!config.tier_path.is_empty()).then_some(config.tier_path.as_str());
         let mut written = 0usize;
         let mut sink_path = String::new();
+        // Tracked separately so the log can say which step failed: not
+        // finding the field and having the write rejected need different
+        // fixes, and one shared message cannot tell them apart.
+        let mut sinks_found = 0usize;
+        let mut rejected = 0usize;
+        let mut unverified = 0usize;
+
         for team_id in targets {
             let Some(doc) = ctx.team_get_json(team_id, "").as_deref().and_then(json::Value::parse)
             else {
                 continue;
             };
             let Some(sink) = schema::find_tier_sink(&doc, pinned) else { continue };
+            sinks_found += 1;
+            sink_path = sink.path.clone();
             let payload = schema::encode_assignment(
                 sink.shape,
                 &assignments,
                 doc.path(&sink.path),
                 config.unrated,
             );
-            if ctx.team_set_json(team_id, &sink.path, &payload) {
-                written += 1;
-                sink_path = sink.path;
+            if !ctx.team_set_json(team_id, &sink.path, &payload) {
+                rejected += 1;
+                continue;
             }
+            // The write is the whole point of the mod, and `team_set_json`
+            // reporting success is not proof the document kept it. Read it
+            // back once rather than trusting the return value.
+            let stored = ctx.team_get_json(team_id, &sink.path);
+            if stored.as_deref().and_then(json::Value::parse)
+                != json::Value::parse(&payload)
+            {
+                unverified += 1;
+                continue;
+            }
+            written += 1;
         }
 
         if written == 0 {
-            log::line(
-                "found no writable champion-tier field on the team record - \
-                 see the TIER-FIELD CANDIDATES section of schema_dump.txt, \
-                 then set tier_path in config.ini",
-            );
+            if sinks_found == 0 {
+                log::line(
+                    "no champion-tier field found on the team record - see the \
+                     TIER-FIELD CANDIDATES section of schema_dump.txt, then set \
+                     tier_path in config.ini",
+                );
+            } else if rejected > 0 {
+                log::line(&format!(
+                    "the game rejected the write at '{sink_path}' on {rejected} team(s) - \
+                     the field was found, so the payload shape is what to look at"
+                ));
+            } else {
+                log::line(&format!(
+                    "wrote '{sink_path}' on {unverified} team(s) but reading it back did \
+                     not match - the game is overwriting or reshaping the value"
+                ));
+            }
             return;
+        }
+        if rejected > 0 || unverified > 0 {
+            log::line(&format!(
+                "note: {rejected} write(s) rejected and {unverified} did not verify at '{sink_path}'"
+            ));
         }
 
         state.last_written = Some(fingerprint);

@@ -72,6 +72,20 @@ pub fn write_report(ctx: &StableServerCtx<'_>, dir: &Path, player_team: Option<u
                 for (path, description) in hits {
                     let _ = writeln!(out, "  {path}\n      {description}");
                 }
+                // The player's team is the one actually written to, and its
+                // document is the one that matters, so it goes out in full
+                // rather than clamped into this report.
+                if let Some(raw) = ctx.team_get_json(team_id, "") {
+                    let path = dir.join("player_team.json");
+                    match std::fs::write(&path, &raw) {
+                        Ok(()) => {
+                            let _ = writeln!(out, "\n  full document written to {}", path.display());
+                        }
+                        Err(error) => {
+                            let _ = writeln!(out, "\n  could not write player_team.json: {error}");
+                        }
+                    }
+                }
             }
             None => {
                 let _ = writeln!(out, "  team_get_json(team, \"\") returned nothing or unparsable JSON");
@@ -182,7 +196,10 @@ fn write_outline(value: &Value, prefix: &str, depth: usize, out: &mut String) {
 fn summary(value: &Value) -> String {
     match value {
         Value::Arr(items) => format!(" (len {})", items.len()),
-        Value::Obj(map) => format!(" ({} keys)", map.len()),
+        // The distinct values matter as much as the key count: whether a
+        // champion-tier map holds only S/A/B/C/D or something a previous mod
+        // left behind decides whether this field is recognised at all.
+        Value::Obj(map) => format!(" ({} keys){}", map.len(), distinct_values(map)),
         Value::Str(s) if s.chars().count() <= 40 => format!(" = {}", json::quote(s)),
         Value::Str(_) => " = <long string>".to_string(),
         Value::Num(n) => format!(" = {n}"),
@@ -219,6 +236,30 @@ fn find_candidates(value: &Value, prefix: &str, hits: &mut Vec<(String, String)>
     }
 }
 
+/// Up to eight distinct scalar values in an object, for the candidate list.
+fn distinct_values(map: &std::collections::BTreeMap<String, Value>) -> String {
+    const MAX_SHOWN: usize = 8;
+    let mut seen: Vec<String> = Vec::new();
+    let mut scalars = 0usize;
+    for value in map.values() {
+        let rendered = match value {
+            Value::Str(text) => json::quote(text),
+            Value::Num(number) => number.to_string(),
+            Value::Bool(flag) => flag.to_string(),
+            Value::Null => "null".to_string(),
+            _ => continue,
+        };
+        scalars += 1;
+        if !seen.contains(&rendered) && seen.len() < MAX_SHOWN {
+            seen.push(rendered);
+        }
+    }
+    if seen.is_empty() || scalars < map.len() {
+        return String::new();
+    }
+    format!(" values: {}{}", seen.join(", "), if seen.len() == MAX_SHOWN { ", ..." } else { "" })
+}
+
 fn clamp(text: &str) -> String {
     if text.len() <= MAX_DOC_CHARS {
         return text.to_string();
@@ -233,6 +274,28 @@ fn clamp(text: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn candidate_summary_shows_the_distinct_values() {
+        // A map another mod left a non-standard entry in: seeing that value
+        // is the whole point of the candidate listing.
+        let doc = Value::parse(r#"{"champion_tiers":{"a":"S","b":"D","c":"","d":"S"}}"#).unwrap();
+        let mut hits = Vec::new();
+        find_candidates(&doc, "", &mut hits);
+        let (_, description) = hits.iter().find(|(path, _)| path == "champion_tiers").unwrap();
+        assert!(description.contains("4 keys"), "{description}");
+        assert!(description.contains(r#""S""#), "{description}");
+        assert!(description.contains(r#""""#), "{description}");
+    }
+
+    #[test]
+    fn nested_objects_do_not_get_a_value_list() {
+        let doc = Value::parse(r#"{"tier":{"a":{"x":1}}}"#).unwrap();
+        let mut hits = Vec::new();
+        find_candidates(&doc, "", &mut hits);
+        let (_, description) = hits.iter().find(|(path, _)| path == "tier").unwrap();
+        assert!(!description.contains("values:"), "{description}");
+    }
 
     #[test]
     fn outline_reports_shape_not_bulk() {

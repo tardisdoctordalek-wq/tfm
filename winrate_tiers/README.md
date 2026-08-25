@@ -66,7 +66,11 @@ Next to the mod binary:
 - `config.ini` — settings, hot-reloaded within a few management ticks.
 - `winrate_tiers.log` — what it found and what it wrote. The server hooks get
   a `StableServerCtx`, which has no log slot, and `StableHost` must not be
-  stored past its callback, so the log goes to a file.
+  stored past its callback, so the log goes to a file. A failure says which
+  step failed: the field was not found, the game rejected the write, or the
+  write did not survive a read-back.
+- `player_team.json` — the player's team document in full, unclamped. The
+  report truncates long documents; this one is the document that matters.
 - `tier_table.txt` — the assignment, with each champion's game count and
   metric, plus the resulting distribution.
 - `schema_dump.txt` — everything the server side can see in the save.
@@ -101,13 +105,24 @@ already had, keeping the document in a shape the game accepts.
 
 The path is still searched rather than hard-coded, so a renamed field in a
 later build degrades to "found nothing and said so" instead of writing to the
-wrong place; `tier_path` pins it outright. Value shapes are validated, so the
-neighbouring `merchandise_facility_grade: "S"` and `stadium.grade: "S"` are
-not mistaken for tier maps.
+wrong place; `tier_path` pins it outright (and a pinned path is honoured even
+when the shape is unfamiliar). Value shapes are validated, so the neighbouring
+`merchandise_facility_grade: "S"` and `stadium.grade: "S"` are not mistaken
+for tier maps.
 
-> v0.1 failed here: its candidate list held the singular `champion_tier` and
-> compared by exact match, missing the real plural `champion_tiers` by one
-> letter. Matching now ignores separators and plurals.
+Recognition is deliberately tolerant: a map counts as a tier list when its
+values are strings and **at least one** is a real tier label. A save another
+tier mod has already touched carries entries outside S/A/B/C/D — the schema
+has no "no tier" value, so mods invent one — and those entries are preserved
+untouched through a write.
+
+> Two versions failed at this step, both by being too strict.
+> v0.1's candidate list held the singular `champion_tier` and compared by
+> exact match, missing the real plural `champion_tiers` by one letter.
+> v0.2 matched the name but demanded every one of the 57 entries be
+> S/A/B/C/D, so a single foreign value on the player's previously-modded team
+> hid the whole field — while the pristine AI teams in the dump read fine,
+> which is exactly why the bug was invisible in the fixtures.
 
 **Not implemented: per-patch weighting.** The `version` field that identifies
 a balance patch exists only on `SoloRankMatch` and `MatchReplay`, not on the
