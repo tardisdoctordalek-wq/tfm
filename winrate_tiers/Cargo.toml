@@ -1,0 +1,19 @@
+[package]
+name = "winrate_tiers"
+version = "0.1.0"
+edition = "2021"
+
+# Stable-ABI mod. Only the repr(C) contract crosses the DLL boundary, so any
+# Rust toolchain works and a build keeps loading on future game versions.
+#
+# Windows:  cargo build --release --target x86_64-pc-windows-gnu
+# Linux:    cargo build --release
+#
+# Zero third-party dependencies on purpose: the mod ships as one file and
+# builds offline.
+
+[lib]
+crate-type = ["cdylib", "rlib"]  # rlib so the pure logic is unit-testable
+
+[dependencies]
+mod-api-stable = { path = "../mod-sdk-stable/mod-api-stable" }
