@@ -105,7 +105,12 @@ fn search_sink(value: &Value, prefix: &str, found: &mut Vec<TierSink>) {
 
 fn classify_sink(value: &Value) -> Option<SinkShape> {
     match value {
-        Value::Obj(map) if !map.is_empty() => {
+        // An empty map is the state a team with nothing assigned is in, and
+        // filling it is the entire job - refusing it made the mod decline to
+        // write in exactly the case it exists for. The shape cannot be read
+        // off no entries, so assume the one the live schema uses.
+        Value::Obj(map) if map.is_empty() => Some(SinkShape::MapOfLabels),
+        Value::Obj(map) => {
             // Tolerant on purpose. A save that another tier mod has already
             // touched carries entries outside S/A/B/C/D - the schema has no
             // "no tier" value, so mods invent one ("", "-", "None"). Demanding
@@ -138,6 +143,49 @@ fn classify_sink(value: &Value) -> Option<SinkShape> {
 
 fn is_tier_label(text: &str) -> bool {
     matches!(text.trim().to_ascii_uppercase().as_str(), "S" | "A" | "B" | "C" | "D")
+}
+
+/// Every key that looks like a tier list, with why it was or was not
+/// accepted. Three releases in a row failed because recognition was too
+/// strict and the log only said "found nothing", so the mod now explains
+/// itself instead of costing another round trip.
+pub fn explain_candidates(team: &Value) -> Vec<String> {
+    let mut notes = Vec::new();
+    walk_candidates(team, "", &mut notes);
+    notes
+}
+
+fn walk_candidates(value: &Value, prefix: &str, notes: &mut Vec<String>) {
+    const MAX_NOTES: usize = 24;
+    let Value::Obj(map) = value else { return };
+    for (key, child) in map {
+        if notes.len() >= MAX_NOTES {
+            return;
+        }
+        let path = if prefix.is_empty() { key.clone() } else { format!("{prefix}.{key}") };
+        if is_tier_key(key) {
+            notes.push(format!("{path}: {}", describe(child)));
+            continue;
+        }
+        walk_candidates(child, &path, notes);
+    }
+}
+
+fn describe(value: &Value) -> String {
+    match classify_sink(value) {
+        Some(shape) => format!("accepted as {shape:?}"),
+        None => match value {
+            Value::Obj(map) => format!(
+                "rejected - object with {} entries, none of which is a tier label \
+                 and not all of which are small numbers",
+                map.len()
+            ),
+            Value::Arr(items) => {
+                format!("rejected - array of {} entries, not one bucket per tier", items.len())
+            }
+            other => format!("rejected - a bare {}, not a champion list", other.kind()),
+        },
+    }
 }
 
 /// Builds the JSON to write back, merging the new assignment over what the
@@ -249,6 +297,50 @@ mod tests {
                 Value::parse(&format!(r#"{{"{key}":{{"a":"S","b":"D"}}}}"#)).unwrap();
             assert!(find_tier_sink(&doc, None).is_some(), "missed {key}");
         }
+    }
+
+    #[test]
+    fn rejections_explain_themselves() {
+        let doc = Value::parse(
+            r#"{"champion_tiers":{},"tier_notes":{"a":"needs work"},"coach":{"tier":3}}"#,
+        )
+        .unwrap();
+        let notes = explain_candidates(&doc);
+        let joined = notes.join(" | ");
+        assert!(joined.contains("champion_tiers: accepted as MapOfLabels"), "{joined}");
+        assert!(joined.contains("tier_notes: rejected"), "{joined}");
+        assert!(joined.contains("coach.tier: rejected - a bare number"), "{joined}");
+    }
+
+    #[test]
+    fn an_empty_tier_map_is_the_case_this_mod_exists_for() {
+        // A team with nothing assigned stores champion_tiers as {}. Refusing
+        // it meant declining to write to precisely the team that needed it.
+        let doc = Value::parse(r#"{"name":"T1","champion_tiers":{}}"#).unwrap();
+        let sink = find_tier_sink(&doc, None).expect("empty tier map is a valid target");
+        assert_eq!(sink.path, KNOWN_TIER_PATH);
+        assert_eq!(sink.shape, SinkShape::MapOfLabels);
+    }
+
+    #[test]
+    fn writing_into_an_empty_map_produces_the_rated_champions() {
+        let doc = Value::parse(r#"{"champion_tiers":{}}"#).unwrap();
+        let list = [
+            assignment("amazon", Tier::S),
+            assignment("archer", Tier::C),
+            assignment("thin", Tier::None),
+        ];
+        let written = Value::parse(&encode_assignment(
+            SinkShape::MapOfLabels,
+            &list,
+            doc.path(KNOWN_TIER_PATH),
+            Unrated::Keep,
+        ))
+        .unwrap();
+        let entries = written.as_object().unwrap();
+        assert_eq!(entries.len(), 2);
+        assert_eq!(entries["amazon"].as_str(), Some("S"));
+        assert_eq!(entries["archer"].as_str(), Some("C"));
     }
 
     #[test]

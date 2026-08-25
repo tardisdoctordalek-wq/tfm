@@ -70,6 +70,63 @@ fn the_live_tier_field_is_located_and_classified() {
     assert_eq!(sink.shape, SinkShape::MapOfLabels);
 }
 
+/// The player's team as the dump reports it: `champion_tiers` empty, sitting
+/// beside three `"S"`-valued facility grades and a 50-key tactics map. Every
+/// release so far failed on some version of this document.
+fn player_team_document() -> Value {
+    Value::parse(
+        r#"{"champion_personal_tactics":{"a":{"x":1},"b":{"y":2}},
+            "champion_tiers":{},
+            "merchandise_facility_grade":"S",
+            "stadium":{"grade":"S"},
+            "training_facility_grade":"S",
+            "name":"player team"}"#,
+    )
+    .unwrap()
+}
+
+#[test]
+fn the_players_empty_tier_map_is_found_and_filled() {
+    let team = player_team_document();
+    let sink = schema::find_tier_sink(&team, None).expect("empty champion_tiers is the target");
+    assert_eq!(sink.path, schema::KNOWN_TIER_PATH);
+
+    let assignments = tiers::classify(
+        &competition_records(),
+        &Model::default(),
+        Mode::Percentile,
+        &Shares::default(),
+        &Thresholds::default(),
+    );
+    let payload = schema::encode_assignment(
+        sink.shape,
+        &assignments,
+        team.path(&sink.path),
+        Unrated::Keep,
+    );
+    let written = Value::parse(&payload).expect("valid JSON");
+    let entries = written.as_object().expect("object");
+
+    // Only rated champions, each with a real tier, and nothing else from the
+    // team document leaking in.
+    assert!(entries.len() > 20, "only {} champions written", entries.len());
+    for (champion, tier) in entries {
+        let label = tier.as_str().unwrap_or_default();
+        assert!(matches!(label, "S" | "A" | "B" | "C" | "D"), "{champion} = {label:?}");
+    }
+    assert!(!entries.contains_key("merchandise_facility_grade"));
+}
+
+#[test]
+fn the_facility_grades_beside_it_are_never_chosen_instead() {
+    // Same document with the tier field absent: nothing else may be adopted.
+    let mut stripped = player_team_document();
+    if let Value::Obj(map) = &mut stripped {
+        map.remove("champion_tiers");
+    }
+    assert_eq!(schema::find_tier_sink(&stripped, None), None);
+}
+
 #[test]
 fn the_vanilla_tier_list_is_the_shape_the_encoder_produces() {
     let vanilla = fixture("champion_tiers.json");

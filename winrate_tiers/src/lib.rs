@@ -231,10 +231,22 @@ impl TierExtension {
         if written == 0 {
             if sinks_found == 0 {
                 log::line(
-                    "no champion-tier field found on the team record - see the \
-                     TIER-FIELD CANDIDATES section of schema_dump.txt, then set \
-                     tier_path in config.ini",
+                    "no champion-tier field found on the team record - candidates \
+                     and why each was refused follow; set tier_path in config.ini \
+                     to force one",
                 );
+                let explained = player_team(ctx)
+                    .and_then(|team_id| ctx.team_get_json(team_id, ""))
+                    .as_deref()
+                    .and_then(json::Value::parse)
+                    .map(|doc| schema::explain_candidates(&doc))
+                    .unwrap_or_default();
+                if explained.is_empty() {
+                    log::line("  (no key on the team document looks like a tier list at all)");
+                }
+                for note in explained {
+                    log::line(&format!("  {note}"));
+                }
             } else if rejected > 0 {
                 log::line(&format!(
                     "the game rejected the write at '{sink_path}' on {rejected} team(s) - \

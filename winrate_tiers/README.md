@@ -116,13 +116,20 @@ tier mod has already touched carries entries outside S/A/B/C/D — the schema
 has no "no tier" value, so mods invent one — and those entries are preserved
 untouched through a write.
 
-> Two versions failed at this step, both by being too strict.
-> v0.1's candidate list held the singular `champion_tier` and compared by
-> exact match, missing the real plural `champion_tiers` by one letter.
-> v0.2 matched the name but demanded every one of the 57 entries be
-> S/A/B/C/D, so a single foreign value on the player's previously-modded team
-> hid the whole field — while the pristine AI teams in the dump read fine,
-> which is exactly why the bug was invisible in the fixtures.
+An **empty** map is accepted too. A team with nothing assigned stores
+`champion_tiers` as `{}`, and filling it is the whole job — so the shape
+cannot be read off the entries and the live schema's label form is assumed.
+That the game itself stores an empty map also settles that a partial list is
+valid, which is what makes `unrated=omit` safe.
+
+> Three releases failed at this one step, each by being too strict about
+> recognising the field, and each time the log only said "found nothing":
+> v0.1 held the singular `champion_tier` and compared by exact match, missing
+> the real plural by one letter; v0.2 matched the name but demanded every
+> entry be S/A/B/C/D; v0.2.1 loosened that but still refused an empty map —
+> which is exactly what the player's team had. Recognition is now tolerant in
+> all three directions, and a failure lists every tier-ish key with the reason
+> it was refused rather than costing another round trip.
 
 **Not implemented: per-patch weighting.** The `version` field that identifies
 a balance patch exists only on `SoloRankMatch` and `MatchReplay`, not on the
