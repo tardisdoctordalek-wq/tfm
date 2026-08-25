@@ -1,5 +1,7 @@
 # Win-Rate Champion Tiers
 
+한국어 문서: [README.ko.md](README.ko.md)
+
 Builds an S/A/B/C/D champion tier list from in-game win-rate statistics and
 writes it to **your team only**.
 
@@ -26,7 +28,8 @@ the distribution a config value instead:
 | D    | 15% (remainder) |
 
 Champions under `min_matches` effective games get no tier and do not consume
-percentile budget.
+percentile budget — excluding them from the tiers but not from the budget
+would let champions with no record take up the S slots.
 
 `mode=threshold` restores absolute cut-offs if you prefer them.
 
@@ -89,3 +92,8 @@ Discovery is conservative: it declines to write rather than guessing at a
 field it is not confident about, and says so in the log. `schema_dump.txt`
 exists to close this loop — it reports the real layout so the paths can be
 pinned exactly in a follow-up version.
+
+Two config keys are parsed but **inert until then**: `solo_weight` (weighing
+solo-rank games against competition games) and `prev_weight` (blending in the
+previous patch). Both need more than one identified stat source to mean
+anything.

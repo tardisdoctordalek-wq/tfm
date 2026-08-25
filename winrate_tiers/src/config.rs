@@ -23,16 +23,17 @@ pub struct Config {
     pub model: Model,
     pub shares: Shares,
     pub thresholds: Thresholds,
-    /// Weight of solo-rank games relative to competition games.
+    /// Weight of solo-rank games relative to competition games. Reserved:
+    /// blending separate stat sources needs the record layout pinned first,
+    /// so nothing reads it yet.
     pub solo_weight: f64,
     /// Max blend weight of the previous patch (0 = current patch only).
+    /// Reserved on the same grounds as `solo_weight`.
     pub prev_weight: f64,
     /// Minimum management ticks between recomputes.
     pub recompute_interval: u64,
     /// Write the schema dump and the tier table next to the mod.
     pub dump: bool,
-    /// Verbosity of the host log.
-    pub verbose: bool,
 }
 
 impl Default for Config {
@@ -49,7 +50,6 @@ impl Default for Config {
             prev_weight: 0.8,
             recompute_interval: 4,
             dump: true,
-            verbose: false,
         }
     }
 }
@@ -148,7 +148,6 @@ pub fn parse(text: &str) -> Config {
                 }
             }
             "dump" => set_bool(&mut config.dump, value),
-            "verbose" => set_bool(&mut config.verbose, value),
             _ => {}
         }
     }
@@ -229,6 +228,10 @@ tier_c=0.478
 # prior        : prior strength, in virtual games played at `neutral`.
 # confidence_k : higher = stronger shrink for low samples.
 # min_matches  : below this many effective games a champion gets No Tier.
+#
+# solo_weight and prev_weight are RESERVED and currently do nothing. Blending
+# separate stat sources (solo rank vs competition, this patch vs the previous
+# one) needs the record layout pinned first - see "Schema" in the README.
 # solo_weight  : weight of solo-rank games. effective = competition + w * solo.
 # prev_weight  : max blend weight of the previous patch (0 = ignore it).
 neutral=0.5
@@ -242,12 +245,10 @@ prev_weight=0.8
 # Housekeeping
 # ---------------------------------------------------------------------------
 # recompute_interval : minimum management ticks between recomputes.
-# dump    : write tier_table.txt (and schema_dump.txt on first run) next to
-#           the mod. Useful for checking what the mod actually sees.
-# verbose : chattier host log.
+# dump : write tier_table.txt (and schema_dump.txt on first run) next to the
+#        mod. Useful for checking what the mod actually sees.
 recompute_interval=4
 dump=true
-verbose=false
 "#;
 
 #[cfg(test)]
