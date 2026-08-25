@@ -167,8 +167,16 @@ hard cut to the current patch; `source=summary` returns to the cheap
 aggregates, where patch weighting cannot apply at all.
 
 The first replay scan is spread over passes of `scan_budget` records so no
-management tick is held for the whole table; tiers are written from what has
-been read and sharpen as the rest arrives.
+management tick is held for the whole table, and scanned ids are remembered so
+later passes are incremental.
+
+It scans **newest-first**. Record ids ascend with time — replay id 0 is the
+save's first game — so reading in id order would spend the first passes on the
+oldest patch and name it the current one. And no tier list is written until
+the patch window settles: scanning backwards means a third distinct version
+proves the newest two are fully read (as does finishing the scan). Writing
+earlier would publish a list built from whichever patch happened to be scanned
+first. The patches found and their game counts go to the log.
 
 ## Verification
 

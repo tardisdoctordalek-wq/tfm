@@ -224,6 +224,45 @@ pub struct Summary {
     pub remaining: usize,
     /// The patches in force, empty under `Source::Summary`.
     pub patches: String,
+    /// Whether the newest two patches are known to be the newest two.
+    pub settled: bool,
+    /// Every patch found and how many games it holds, newest first. Printed
+    /// so "is the current patch actually being used" is answerable from the
+    /// log instead of inferred.
+    pub census: String,
+}
+
+impl Collector {
+    /// Every patch seen with its game count, newest first.
+    fn census(&self) -> String {
+        let mut counts: BTreeMap<String, f64> = BTreeMap::new();
+        for (version, count) in &self.games {
+            *counts.entry(version.clone()).or_default() += count;
+        }
+        let mut ordered: Vec<(String, f64)> = counts.into_iter().collect();
+        ordered.sort_by(|left, right| {
+            patch::parse_version(&right.0).cmp(&patch::parse_version(&left.0))
+        });
+        ordered
+            .iter()
+            .map(|(version, count)| format!("{version}:{count:.0}"))
+            .collect::<Vec<_>>()
+            .join(" ")
+    }
+
+    /// Whether the newest two patches can be trusted to be the newest two.
+    ///
+    /// Scanning runs newest-first, so once a third distinct version has been
+    /// seen, everything belonging to the first two has already been read.
+    /// Until then the window is provisional and writing a tier list from it
+    /// would mean writing one patch's worth of the wrong history.
+    pub fn window_settled(&self, scan_complete: bool) -> bool {
+        if scan_complete {
+            return true;
+        }
+        let versions: BTreeSet<&String> = self.replay.keys().chain(self.solo.keys()).collect();
+        versions.len() >= 3
+    }
 }
 
 /// Settings one collection pass needs.
@@ -283,6 +322,12 @@ impl Collector {
             }
         };
         summary.patches = patches.describe();
+        summary.census = self.census();
+        summary.settled = match params.source {
+            // Without versions there is no window to settle.
+            Source::Summary => true,
+            Source::Replay => self.window_settled(summary.remaining == 0),
+        };
 
         let contest = match params.source {
             Source::Replay => Contest {
@@ -349,6 +394,13 @@ impl Collector {
     /// Adds up to `budget` unread match documents of one kind. Returns how
     /// many were read and how many are still outstanding.
     ///
+    /// Read **newest first**. Record ids ascend with time - replay id 0 is
+    /// the first game of the save - so scanning in id order would spend the
+    /// first passes on the oldest patch and name it the current one. Going
+    /// backwards means the patches that matter are covered first, and it is
+    /// what lets [`Collector::window_settled`] know when the newest two are
+    /// complete.
+    ///
     /// Only the scalar fields that matter are read by path: these documents
     /// carry full per-player stat blocks and there are thousands of them.
     fn scan(
@@ -359,7 +411,9 @@ impl Collector {
         which: Scan,
     ) -> (usize, usize) {
         let (added, mut remaining) = (&mut 0usize, 0usize);
-        for id in ctx.record_ids(kind) {
+        let mut ids = ctx.record_ids(kind);
+        ids.reverse();
+        for id in ids {
             let counted = match which {
                 Scan::Replay => &self.counted_replays,
                 Scan::Solo => &self.counted_solo,
@@ -542,6 +596,32 @@ mod tests {
             current_games: games,
             ..Contest::default()
         }
+    }
+
+    fn collector_with_versions(list: &[&str]) -> Collector {
+        let mut collector = Collector::default();
+        for version in list {
+            collector.replay.insert((*version).to_string(), BTreeMap::new());
+        }
+        collector
+    }
+
+    #[test]
+    fn the_window_is_provisional_until_a_third_patch_appears() {
+        // Scanning runs newest-first, so seeing a third version proves the
+        // newest two are fully read. Before that the newest version seen may
+        // simply be the newest scanned so far.
+        assert!(!collector_with_versions(&["2027.2.0"]).window_settled(false));
+        assert!(!collector_with_versions(&["2027.2.0", "2027.1.0"]).window_settled(false));
+        assert!(collector_with_versions(&["2027.2.0", "2027.1.0", "2027.0.0"])
+            .window_settled(false));
+    }
+
+    #[test]
+    fn a_completed_scan_settles_the_window_whatever_it_found() {
+        // A save whose whole history is one patch never reaches three.
+        assert!(collector_with_versions(&["2027.2.0"]).window_settled(true));
+        assert!(Collector::default().window_settled(true));
     }
 
     #[test]

@@ -165,12 +165,18 @@ impl TierExtension {
         let (records, summary) = state.stats.collect(ctx, &params);
         if summary.remaining > 0 {
             // The replay table is scanned over several passes so a management
-            // tick is never held for the whole thing. Tiers are written from
-            // what is read so far and sharpen as the rest arrives.
+            // tick is never held for the whole thing.
             log::line(&format!(
-                "scanning match history: +{} this pass, {} still to read",
-                summary.new_records, summary.remaining
+                "scanning match history newest-first: +{} this pass, {} still to read ({})",
+                summary.new_records,
+                summary.remaining,
+                if summary.settled { "patch window settled" } else { "patch window still provisional" }
             ));
+        }
+        // Writing before the window settles would publish a tier list built
+        // from whichever patch happened to be scanned first.
+        if !summary.settled {
+            return;
         }
         if records.is_empty() {
             log::line(
@@ -284,6 +290,9 @@ impl TierExtension {
         }
 
         state.last_written = Some(fingerprint);
+        if !summary.census.is_empty() {
+            log::line(&format!("patches found (games each, newest first): {}", summary.census));
+        }
         let counts = tiers::histogram(&assignments)
             .iter()
             .map(|(tier, count)| format!("{tier}:{count}"))
