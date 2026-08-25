@@ -16,14 +16,20 @@
 //! It registers a server extension and nothing else: no draft-score hook and
 //! no UI override, so it composes with a separate ban/pick or tier-list mod
 //! instead of fighting it for the champion screen.
+//!
+//! Win rates come from `statistics.<athlete>.champion_detail` on the
+//! competition records and from the per-match `SoloRankMatch` documents; the
+//! list is written to `champion_tiers` on the team record. See `stats.rs` and
+//! `schema.rs` for how those are read and located.
 
-mod config;
-mod json;
-mod log;
-mod modpath;
-mod probe;
-mod schema;
-mod tiers;
+pub mod config;
+pub mod json;
+pub mod log;
+pub mod modpath;
+pub mod probe;
+pub mod schema;
+pub mod stats;
+pub mod tiers;
 
 use std::fmt::Write as _;
 use std::path::PathBuf;
@@ -35,15 +41,6 @@ use mod_api_stable::{
 };
 
 pub const MOD_ID: &str = "winrate_tiers";
-
-/// Record kinds searched for a per-champion win/loss table, most specific
-/// first. The first kind that yields a table wins.
-const STAT_KINDS: [RecordKindV1; 4] = [
-    RecordKindV1::KnowledgeBase,
-    RecordKindV1::League,
-    RecordKindV1::LeagueCompetition,
-    RecordKindV1::SoloRankMatch,
-];
 
 fn init(host: &StableHost) -> StableMod {
     let version = host.game_version();
@@ -73,6 +70,7 @@ struct State {
     config: Option<config::ConfigFile>,
     ticks: u64,
     probed: bool,
+    stats: stats::Collector,
     /// Fingerprint of the last list written, so an unchanged recompute does
     /// not rewrite the record every tick.
     last_written: Option<u64>,
@@ -86,6 +84,7 @@ impl TierExtension {
                 config: None,
                 ticks: 0,
                 probed: false,
+                stats: stats::Collector::default(),
                 last_written: None,
             }),
         }
@@ -99,6 +98,8 @@ impl StableServerExtension for TierExtension {
         state.ticks = 0;
         state.probed = false;
         state.last_written = None;
+        // A different save has different records; nothing carries over.
+        state.stats = stats::Collector::default();
 
         if state.dir.is_none() {
             state.dir = modpath::mod_dir();
@@ -153,16 +154,17 @@ impl StableServerExtension for TierExtension {
 
 impl TierExtension {
     fn recompute(&self, ctx: &mut StableServerCtx<'_>, state: &mut State, config: &config::Config) {
-        let Some(table) = self.collect_stats(ctx) else {
+        let (records, summary) = state.stats.collect(ctx, config.solo_weight);
+        if records.is_empty() {
             log::line(
-                "no per-champion win/loss table found in any record kind - \
-                 check schema_dump.txt and pin the path in config.ini",
+                "no champion win/loss data found - a fresh save has none until \
+                 competitions have been played",
             );
             return;
-        };
+        }
 
         let assignments = tiers::classify(
-            &table.rows,
+            &records,
             &config.model,
             config.mode,
             &config.shares,
@@ -185,6 +187,7 @@ impl TierExtension {
             targets.extend(ctx.record_ids(RecordKindV1::Team).into_iter().filter(|id| *id != player));
         }
 
+        let pinned = (!config.tier_path.is_empty()).then_some(config.tier_path.as_str());
         let mut written = 0usize;
         let mut sink_path = String::new();
         for team_id in targets {
@@ -192,8 +195,13 @@ impl TierExtension {
             else {
                 continue;
             };
-            let Some(sink) = schema::find_tier_sink(&doc, None) else { continue };
-            let payload = schema::encode_assignment(sink.shape, &assignments);
+            let Some(sink) = schema::find_tier_sink(&doc, pinned) else { continue };
+            let payload = schema::encode_assignment(
+                sink.shape,
+                &assignments,
+                doc.path(&sink.path),
+                config.unrated,
+            );
             if ctx.team_set_json(team_id, &sink.path, &payload) {
                 written += 1;
                 sink_path = sink.path;
@@ -203,7 +211,8 @@ impl TierExtension {
         if written == 0 {
             log::line(
                 "found no writable champion-tier field on the team record - \
-                 see the TIER-FIELD CANDIDATES section of schema_dump.txt",
+                 see the TIER-FIELD CANDIDATES section of schema_dump.txt, \
+                 then set tier_path in config.ini",
             );
             return;
         }
@@ -215,34 +224,22 @@ impl TierExtension {
             .collect::<Vec<_>>()
             .join(" ");
         log::line(&format!(
-            "tiers applied to {written} team(s) via '{sink_path}' from {} champions [{counts}]",
-            table.rows.len()
+            "wrote {} champions to '{sink_path}' on {written} team(s) [{counts}] \
+             (competition {:.0} games, solo {:.0}, +{} new solo records)",
+            summary.champions,
+            summary.competition_matches,
+            summary.solo_matches,
+            summary.new_solo_records
         ));
 
         if config.dump {
             if let Some(dir) = state.dir.as_ref() {
                 let _ = std::fs::write(
                     dir.join("tier_table.txt"),
-                    render_table(&assignments, &table.path, config),
+                    render_table(&assignments, &summary, config),
                 );
             }
         }
-    }
-
-    /// Walks the record kinds looking for a champion win/loss table.
-    fn collect_stats(&self, ctx: &StableServerCtx<'_>) -> Option<schema::StatTable> {
-        for kind in STAT_KINDS {
-            for id in ctx.record_ids(kind).into_iter().take(4) {
-                let Some(doc) = ctx.record_get_json(kind, id, "").as_deref().and_then(json::Value::parse)
-                else {
-                    continue;
-                };
-                if let Some(table) = schema::find_stat_table(&doc, None) {
-                    return Some(table);
-                }
-            }
-        }
-        None
     }
 }
 
@@ -268,12 +265,16 @@ fn fingerprint(assignments: &[tiers::Assignment]) -> u64 {
 
 fn render_table(
     assignments: &[tiers::Assignment],
-    source: &str,
+    summary: &stats::Summary,
     config: &config::Config,
 ) -> String {
     let mut out = String::new();
     let _ = writeln!(out, "# {MOD_ID} - champion tier table");
-    let _ = writeln!(out, "# stat source: {source}");
+    let _ = writeln!(
+        out,
+        "# games: competition {:.0}, solo {:.0} (weighted x{})",
+        summary.competition_matches, summary.solo_matches, config.solo_weight
+    );
     let _ = writeln!(
         out,
         "# mode: {:?}   neutral={} prior={} confidence_k={} min_matches={}",
@@ -324,7 +325,7 @@ mod tests {
     #[test]
     fn rendered_table_reports_the_distribution() {
         let list = [assignment("fighter", Tier::S), assignment("mage", Tier::D)];
-        let text = render_table(&list, "league.stats", &config::Config::default());
+        let text = render_table(&list, &stats::Summary::default(), &config::Config::default());
         assert!(text.contains("S=1"));
         assert!(text.contains("D=1"));
         assert!(text.contains("fighter"));

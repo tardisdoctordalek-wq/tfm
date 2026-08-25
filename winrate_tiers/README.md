@@ -53,7 +53,7 @@ mods/winrate_tiers/
 ```
 cargo build --release                                # Linux  -> libwinrate_tiers.so
 cargo build --release --target x86_64-pc-windows-gnu # Windows -> winrate_tiers.dll
-cargo test                                           # pure logic, no game needed
+cargo test                                           # logic + real-save fixtures, no game needed
 ```
 
 Rename the Linux output to `winrate_tiers.so` when installing (cargo prefixes
@@ -71,29 +71,62 @@ Next to the mod binary:
   metric, plus the resulting distribution.
 - `schema_dump.txt` — everything the server side can see in the save.
 
-## Status: schema binding is not pinned yet
+## Schema
 
-The stable ABI hands out game records as opaque JSON and has **no
-champion-tier slot** — tiers live somewhere inside the team document, and the
-per-champion win/loss table lives somewhere inside a record document. Neither
-shape is documented, and the mod this grew out of shipped only as a compiled
-DLL, so there was no source to read them off.
+Both ends are pinned against a `schema_dump.txt` taken from a real save.
 
-So both ends are **discovered at runtime** (`src/schema.rs`) rather than
-hard-coded:
+**Source — champion win/loss.** `LeagueCompetition` and `TournamentCompetition`
+carry `statistics`, keyed by athlete id, each holding `champion_detail`:
 
-- the **sink** — a team-document key named like a tier list whose value is
-  shaped like one (champion→label map, champion→index map, or one bucket
-  array per tier);
-- the **source** — a table whose rows carry a champion identifier plus a
-  games-played and a games-won count.
+```
+statistics.<athlete>.champion_detail.<champion> = { matches, wins, dealing, healing, rating, tanking }
+```
 
-Discovery is conservative: it declines to write rather than guessing at a
-field it is not confident about, and says so in the log. `schema_dump.txt`
-exists to close this loop — it reports the real layout so the paths can be
-pinned exactly in a follow-up version.
+Summing over athletes gives the champion's pick and win count. Records carry
+`finalized`, so a finished competition is read once and cached.
 
-Two config keys are parsed but **inert until then**: `solo_weight` (weighing
-solo-rank games against competition games) and `prev_weight` (blending in the
-previous patch). Both need more than one identified stat source to mean
-anything.
+`SoloRankMatch` is one document per match — `blue_team[]`/`red_team[]` rows
+name a `champion` and `blue_team_win` decides the result. These documents are
+large and there are thousands, so only the scalar fields that matter are read
+by path and each match id is counted once. The first pass walks them all;
+later passes are incremental.
+
+**Sink — the tier list.** `champion_tiers` on the team record, a champion key
+to `"S"`/`"A"`/`"B"`/`"C"`/`"D"` map. It is **per team**, which is what makes
+writing yours leave the other 119 teams on their vanilla tiers.
+
+The schema has no "no tier" value — all 57 champions carry one — so `unrated`
+defaults to `keep`: a champion the stats cannot rate retains the tier the save
+already had, keeping the document in a shape the game accepts.
+
+The path is still searched rather than hard-coded, so a renamed field in a
+later build degrades to "found nothing and said so" instead of writing to the
+wrong place; `tier_path` pins it outright. Value shapes are validated, so the
+neighbouring `merchandise_facility_grade: "S"` and `stadium.grade: "S"` are
+not mistaken for tier maps.
+
+> v0.1 failed here: its candidate list held the singular `champion_tier` and
+> compared by exact match, missing the real plural `champion_tiers` by one
+> letter. Matching now ignores separators and plurals.
+
+**Not implemented: per-patch weighting.** The `version` field that identifies
+a balance patch exists only on `SoloRankMatch` and `MatchReplay`, not on the
+competition aggregates, so competition stats cannot be split by patch from
+these records. There is deliberately no `prev_weight` setting rather than one
+that quietly does nothing.
+
+## Verification
+
+`tests/fixtures/` holds verbatim excerpts from a real save, and
+`tests/real_save.rs` runs the pipeline over them. On one season of competition
+data (65 athletes, 41 champions, 1192 games):
+
+| mode | S | A | B | C | D | no tier |
+|:---|--:|--:|--:|--:|--:|--:|
+| old cut-offs (0.55/0.52/0.48/0.45) | 2 | 4 | **18** | 8 | 2 | 7 |
+| relaxed cut-offs (0.55/0.52/0.50/0.478) | 2 | 4 | **15** | 3 | 10 | 7 |
+| percentile (10/20/30/25/15) | 3 | 7 | **11** | 8 | 5 | 7 |
+
+B goes from 53% to 32% of the rated roster. The tests also assert the
+aggregate win rate lands near 50%, which catches an aggregation that doubles
+or drops rows.

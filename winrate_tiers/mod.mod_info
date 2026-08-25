@@ -1,15 +1,15 @@
 {
-  "name": "Win-Rate Champion Tiers",
   "author": "tardisdoctordalek",
-  "version": "0.1.0",
-  "mod_type": "native",
   "contains_code": true,
-  "description": "Builds an S/A/B/C/D champion tier list from in-game win-rate statistics and writes it to YOUR team only.\n\n== What is different ==\n1) Tiers are handed out by share of the ranked roster, not by fixed win-rate cut-offs. The win-rate metric pulls thin samples toward the break-even rate, so absolute cut-offs dump most of the roster into whichever band straddles it - which is why a threshold-based tier list ends up almost entirely B. Here the distribution is a config value: S/A/B/C/D shares default to 10/20/30/25/15 percent.\n\n2) The list is applied to your own team only. Writing one solved tier list to every AI team makes the whole league ban and pick the same champions, and the draft stops being interesting. Set apply_to_ai_teams=true if you want the old behaviour.\n\n== Composability ==\nThis mod registers a server extension and nothing else - no draft-score hook, no UI override. It does not take over the Champion screen, so it runs alongside a separate ban/pick mod without a load-order fight.\n\n== Config ==\nEdit config.ini next to the mod. Changes are hot-reloaded within a few management ticks; no restart needed. The mod also writes tier_table.txt (what it assigned and why) and schema_dump.txt (what it can see in the save) next to itself.",
-  "last_updated": "2026-08-25",
   "dependencies": [
     {
       "mod_id": "base",
       "version": ">=0.5.6"
     }
-  ]
+  ],
+  "description": "Builds an S/A/B/C/D champion tier list from in-game win-rate statistics and writes it to YOUR team only.\n\n== What is different ==\n1) Tiers are handed out by share of the ranked roster, not by fixed win-rate cut-offs. The win-rate metric pulls thin samples toward the break-even rate, so absolute cut-offs dump most of the roster into whichever band straddles it - which is why a threshold-based tier list ends up mostly B. On a real save's competition data, fixed cut-offs put 18 of 34 rated champions in B; the share-based split puts 11. The distribution is a config value: S/A/B/C/D default to 10/20/30/25/15 percent.\n\n2) The list is applied to your own team only. champion_tiers is a per-team field, so writing yours leaves the rest of the league on its vanilla tiers. Sharing one solved tier list with every AI team is what makes the whole league ban and pick the same champions. Set apply_to_ai_teams=true for the old behaviour.\n\n== Data used ==\nPer champion, games played and games won, summed from the competition records (league and tournament) and from solo-rank matches at a configurable weight. Win rates are pulled toward the average for small samples (Bayesian shrink plus a confidence factor), and champions under min_matches games keep whatever tier the save already has.\n\n== Composability ==\nThis mod registers a server extension and nothing else - no draft-score hook, no UI override. It does not take over the Champion screen, so it runs alongside a separate ban/pick mod without a load-order fight.\n\n== Config ==\nEdit config.ini next to the mod. Changes are hot-reloaded within a few management ticks; no restart needed. The mod also writes tier_table.txt (what it assigned and why) and schema_dump.txt (what it can see in the save) next to itself.",
+  "last_updated": "2026-08-25",
+  "mod_type": "native",
+  "name": "Win-Rate Champion Tiers",
+  "version": "0.2.0"
 }

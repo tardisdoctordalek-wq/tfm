@@ -1,0 +1,3459 @@
+{
+ "finalized": true,
+ "id": 0,
+ "league_type": "Spring",
+ "statistics": {
+  "0": {
+   "champion_detail": {
+    "amazon": {
+     "dealing": 217137,
+     "healing": 163671,
+     "matches": 16,
+     "rating": 1172,
+     "tanking": 249595,
+     "wins": 10
+    },
+    "archer": {
+     "dealing": 25454,
+     "healing": 8025,
+     "matches": 2,
+     "rating": 143,
+     "tanking": 18906,
+     "wins": 1
+    },
+    "boomerang_hunter": {
+     "dealing": 176306,
+     "healing": 44574,
+     "matches": 10,
+     "rating": 689,
+     "tanking": 96827,
+     "wins": 6
+    },
+    "candygel": {
+     "dealing": 39108,
+     "healing": 65124,
+     "matches": 5,
+     "rating": 375,
+     "tanking": 43773,
+     "wins": 4
+    },
+    "cf_k_sante": {
+     "dealing": 43169,
+     "healing": 52143,
+     "matches": 5,
+     "rating": 358,
+     "tanking": 79351,
+     "wins": 2
+    },
+    "cf_vi": {
+     "dealing": 12244,
+     "healing": 2625,
+     "matches": 1,
+     "rating": 72,
+     "tanking": 5467,
+     "wins": 1
+    },
+    "gambler": {
+     "dealing": 312585,
+     "healing": 76644,
+     "matches": 23,
+     "rating": 1580,
+     "tanking": 248797,
+     "wins": 14
+    },
+    "harpy": {
+     "dealing": 58667,
+     "healing": 18884,
+     "matches": 4,
+     "rating": 300,
+     "tanking": 39299,
+     "wins": 3
+    },
+    "illusionist": {
+     "dealing": 89820,
+     "healing": 17276,
+     "matches": 5,
+     "rating": 365,
+     "tanking": 42602,
+     "wins": 1
+    },
+    "lancer": {
+     "dealing": 122542,
+     "healing": 53247,
+     "matches": 7,
+     "rating": 498,
+     "tanking": 94013,
+     "wins": 5
+    },
+    "nightmare": {
+     "dealing": 77504,
+     "healing": 23113,
+     "matches": 4,
+     "rating": 286,
+     "tanking": 43252,
+     "wins": 2
+    },
+    "pole_warrior": {
+     "dealing": 254171,
+     "healing": 114916,
+     "matches": 19,
+     "rating": 1391,
+     "tanking": 235292,
+     "wins": 12
+    },
+    "priest": {
+     "dealing": 11856,
+     "healing": 85705,
+     "matches": 4,
+     "rating": 276,
+     "tanking": 48170,
+     "wins": 1
+    },
+    "pyromancer": {
+     "dealing": 221787,
+     "healing": 47193,
+     "matches": 14,
+     "rating": 991,
+     "tanking": 121284,
+     "wins": 10
+    },
+    "swordman": {
+     "dealing": 95433,
+     "healing": 42337,
+     "matches": 8,
+     "rating": 567,
+     "tanking": 86005,
+     "wins": 6
+    },
+    "test_mod_lucian": {
+     "dealing": 93138,
+     "healing": 28077,
+     "matches": 3,
+     "rating": 207,
+     "tanking": 44109,
+     "wins": 1
+    }
+   }
+  },
+  "1": {
+   "champion_detail": {
+    "amazon": {
+     "dealing": 52687,
+     "healing": 19262,
+     "matches": 4,
+     "rating": 283,
+     "tanking": 45490,
+     "wins": 2
+    },
+    "boomerang_hunter": {
+     "dealing": 4396,
+     "healing": 2818,
+     "matches": 1,
+     "rating": 68,
+     "tanking": 7396,
+     "wins": 0
+    },
+    "candygel": {
+     "dealing": 56859,
+     "healing": 153791,
+     "matches": 8,
+     "rating": 593,
+     "tanking": 139040,
+     "wins": 4
+    },
+    "cf_axe": {
+     "dealing": 8232,
+     "healing": 5629,
+     "matches": 1,
+     "rating": 69,
+     "tanking": 13528,
+     "wins": 0
+    },
+    "cf_k_sante": {
+     "dealing": 126959,
+     "healing": 130623,
+     "matches": 9,
+     "rating": 686,
+     "tanking": 169025,
+     "wins": 7
+    },
+    "cf_lux": {
+     "dealing": 24035,
+     "healing": 4757,
+     "matches": 2,
+     "rating": 130,
+     "tanking": 19524,
+     "wins": 0
+    },
+    "cf_vi": {
+     "dealing": 76184,
+     "healing": 32050,
+     "matches": 4,
+     "rating": 301,
+     "tanking": 68435,
+     "wins": 3
+    },
+    "circus_blade": {
+     "dealing": 26900,
+     "healing": 12901,
+     "matches": 3,
+     "rating": 207,
+     "tanking": 30673,
+     "wins": 1
+    },
+    "demon": {
+     "dealing": 21997,
+     "healing": 11221,
+     "matches": 2,
+     "rating": 149,
+     "tanking": 16089,
+     "wins": 1
+    },
+    "dual_blader": {
+     "dealing": 11157,
+     "healing": 3349,
+     "matches": 1,
+     "rating": 65,
+     "tanking": 11897,
+     "wins": 0
+    },
+    "executioner": {
+     "dealing": 20507,
+     "healing": 10414,
+     "matches": 2,
+     "rating": 148,
+     "tanking": 20623,
+     "wins": 2
+    },
+    "fighter": {
+     "dealing": 12237,
+     "healing": 10443,
+     "matches": 1,
+     "rating": 74,
+     "tanking": 21937,
+     "wins": 0
+    },
+    "gambler": {
+     "dealing": 17987,
+     "healing": 3103,
+     "matches": 1,
+     "rating": 75,
+     "tanking": 9143,
+     "wins": 0
+    },
+    "harpy": {
+     "dealing": 18850,
+     "healing": 6765,
+     "matches": 1,
+     "rating": 75,
+     "tanking": 15855,
+     "wins": 1
+    },
+    "hellion": {
+     "dealing": 16232,
+     "healing": 1734,
+     "matches": 1,
+     "rating": 66,
+     "tanking": 10358,
+     "wins": 1
+    },
+    "lancer": {
+     "dealing": 24607,
+     "healing": 10665,
+     "matches": 2,
+     "rating": 131,
+     "tanking": 32201,
+     "wins": 1
+    },
+    "nightmare": {
+     "dealing": 100300,
+     "healing": 36298,
+     "matches": 5,
+     "rating": 385,
+     "tanking": 82730,
+     "wins": 3
+    },
+    "ninja": {
+     "dealing": 10620,
+     "healing": 3063,
+     "matches": 1,
+     "rating": 66,
+     "tanking": 12800,
+     "wins": 0
+    },
+    "siege_breaker": {
+     "dealing": 29743,
+     "healing": 16284,
+     "matches": 3,
+     "rating": 213,
+     "tanking": 30678,
+     "wins": 2
+    },
+    "swordman": {
+     "dealing": 88565,
+     "healing": 45941,
+     "matches": 5,
+     "rating": 353,
+     "tanking": 100366,
+     "wins": 2
+    },
+    "test_mod_lucian": {
+     "dealing": 46942,
+     "healing": 12807,
+     "matches": 3,
+     "rating": 209,
+     "tanking": 23035,
+     "wins": 2
+    },
+    "vampire": {
+     "dealing": 13005,
+     "healing": 16270,
+     "matches": 1,
+     "rating": 66,
+     "tanking": 13513,
+     "wins": 0
+    }
+   }
+  },
+  "10": {
+   "champion_detail": {
+    "amazon": {
+     "dealing": 69781,
+     "healing": 42511,
+     "matches": 5,
+     "rating": 359,
+     "tanking": 82955,
+     "wins": 3
+    },
+    "executioner": {
+     "dealing": 22200,
+     "healing": 9175,
+     "matches": 2,
+     "rating": 145,
+     "tanking": 15119,
+     "wins": 1
+    },
+    "fighter": {
+     "dealing": 17287,
+     "healing": 12794,
+     "matches": 1,
+     "rating": 75,
+     "tanking": 15623,
+     "wins": 1
+    },
+    "gambler": {
+     "dealing": 89033,
+     "healing": 22962,
+     "matches": 8,
+     "rating": 561,
+     "tanking": 82475,
+     "wins": 7
+    },
+    "illusionist": {
+     "dealing": 38249,
+     "healing": 7604,
+     "matches": 2,
+     "rating": 166,
+     "tanking": 12458,
+     "wins": 2
+    },
+    "lancer": {
+     "dealing": 111300,
+     "healing": 44689,
+     "matches": 10,
+     "rating": 724,
+     "tanking": 93496,
+     "wins": 8
+    },
+    "pole_warrior": {
+     "dealing": 28531,
+     "healing": 15739,
+     "matches": 3,
+     "rating": 206,
+     "tanking": 31424,
+     "wins": 2
+    },
+    "pyromancer": {
+     "dealing": 125534,
+     "healing": 28170,
+     "matches": 10,
+     "rating": 681,
+     "tanking": 92702,
+     "wins": 6
+    },
+    "soldier": {
+     "dealing": 13562,
+     "healing": 3807,
+     "matches": 1,
+     "rating": 77,
+     "tanking": 4223,
+     "wins": 0
+    },
+    "swordman": {
+     "dealing": 14264,
+     "healing": 6425,
+     "matches": 1,
+     "rating": 66,
+     "tanking": 13826,
+     "wins": 0
+    }
+   }
+  },
+  "11": {
+   "champion_detail": {
+    "amazon": {
+     "dealing": 4583,
+     "healing": 936,
+     "matches": 1,
+     "rating": 68,
+     "tanking": 4123,
+     "wins": 0
+    },
+    "berserker": {
+     "dealing": 48011,
+     "healing": 26900,
+     "matches": 3,
+     "rating": 216,
+     "tanking": 63859,
+     "wins": 1
+    },
+    "cavalry_knight": {
+     "dealing": 42538,
+     "healing": 25472,
+     "matches": 5,
+     "rating": 353,
+     "tanking": 87931,
+     "wins": 1
+    },
+    "demon": {
+     "dealing": 72531,
+     "healing": 8518,
+     "matches": 6,
+     "rating": 422,
+     "tanking": 72145,
+     "wins": 2
+    },
+    "dual_blader": {
+     "dealing": 52450,
+     "healing": 0,
+     "matches": 5,
+     "rating": 356,
+     "tanking": 42605,
+     "wins": 1
+    },
+    "gunner": {
+     "dealing": 63212,
+     "healing": 1064,
+     "matches": 5,
+     "rating": 347,
+     "tanking": 47717,
+     "wins": 1
+    },
+    "lancer": {
+     "dealing": 64032,
+     "healing": 9814,
+     "matches": 4,
+     "rating": 268,
+     "tanking": 67704,
+     "wins": 1
+    },
+    "ninja": {
+     "dealing": 10275,
+     "healing": 3038,
+     "matches": 1,
+     "rating": 64,
+     "tanking": 10830,
+     "wins": 0
+    },
+    "priest": {
+     "dealing": 328,
+     "healing": 11801,
+     "matches": 1,
+     "rating": 66,
+     "tanking": 4579,
+     "wins": 0
+    },
+    "siege_breaker": {
+     "dealing": 5008,
+     "healing": 0,
+     "matches": 1,
+     "rating": 65,
+     "tanking": 9227,
+     "wins": 0
+    },
+    "soldier": {
+     "dealing": 8962,
+     "healing": 0,
+     "matches": 1,
+     "rating": 63,
+     "tanking": 9229,
+     "wins": 0
+    },
+    "swordman": {
+     "dealing": 33662,
+     "healing": 11724,
+     "matches": 3,
+     "rating": 201,
+     "tanking": 32472,
+     "wins": 1
+    },
+    "vampire": {
+     "dealing": 57804,
+     "healing": 41684,
+     "matches": 3,
+     "rating": 197,
+     "tanking": 50451,
+     "wins": 1
+    }
+   }
+  },
+  "12": {
+   "champion_detail": {
+    "dual_blader": {
+     "dealing": 10462,
+     "healing": 2563,
+     "matches": 1,
+     "rating": 61,
+     "tanking": 18079,
+     "wins": 0
+    },
+    "fighter": {
+     "dealing": 20346,
+     "healing": 17021,
+     "matches": 2,
+     "rating": 157,
+     "tanking": 26175,
+     "wins": 2
+    },
+    "hammerer": {
+     "dealing": 29943,
+     "healing": 0,
+     "matches": 4,
+     "rating": 311,
+     "tanking": 45877,
+     "wins": 2
+    },
+    "jiangshi": {
+     "dealing": 39512,
+     "healing": 20455,
+     "matches": 4,
+     "rating": 285,
+     "tanking": 35945,
+     "wins": 1
+    },
+    "knight": {
+     "dealing": 21698,
+     "healing": 5926,
+     "matches": 7,
+     "rating": 547,
+     "tanking": 118281,
+     "wins": 5
+    },
+    "monk": {
+     "dealing": 44094,
+     "healing": 145729,
+     "matches": 13,
+     "rating": 970,
+     "tanking": 166487,
+     "wins": 10
+    },
+    "ogre": {
+     "dealing": 2324,
+     "healing": 0,
+     "matches": 1,
+     "rating": 64,
+     "tanking": 6858,
+     "wins": 0
+    },
+    "pole_warrior": {
+     "dealing": 44754,
+     "healing": 6213,
+     "matches": 5,
+     "rating": 334,
+     "tanking": 90241,
+     "wins": 1
+    },
+    "pythoness": {
+     "dealing": 9699,
+     "healing": 32471,
+     "matches": 2,
+     "rating": 137,
+     "tanking": 16913,
+     "wins": 1
+    },
+    "shield_bearer": {
+     "dealing": 13796,
+     "healing": 0,
+     "matches": 5,
+     "rating": 384,
+     "tanking": 77034,
+     "wins": 4
+    },
+    "vampire": {
+     "dealing": 27529,
+     "healing": 23913,
+     "matches": 2,
+     "rating": 145,
+     "tanking": 27484,
+     "wins": 1
+    }
+   }
+  },
+  "13": {
+   "champion_detail": {
+    "cavalry_knight": {
+     "dealing": 24357,
+     "healing": 14817,
+     "matches": 2,
+     "rating": 151,
+     "tanking": 36201,
+     "wins": 1
+    },
+    "dual_blader": {
+     "dealing": 7418,
+     "healing": 25,
+     "matches": 1,
+     "rating": 68,
+     "tanking": 7275,
+     "wins": 0
+    },
+    "fighter": {
+     "dealing": 94615,
+     "healing": 60518,
+     "matches": 9,
+     "rating": 684,
+     "tanking": 123765,
+     "wins": 5
+    },
+    "gambler": {
+     "dealing": 39316,
+     "healing": 0,
+     "matches": 3,
+     "rating": 199,
+     "tanking": 26806,
+     "wins": 1
+    },
+    "gunner": {
+     "dealing": 172538,
+     "healing": 10398,
+     "matches": 9,
+     "rating": 633,
+     "tanking": 87011,
+     "wins": 5
+    },
+    "jiangshi": {
+     "dealing": 39627,
+     "healing": 21917,
+     "matches": 4,
+     "rating": 286,
+     "tanking": 56126,
+     "wins": 0
+    },
+    "lancer": {
+     "dealing": 15218,
+     "healing": 1989,
+     "matches": 1,
+     "rating": 69,
+     "tanking": 10612,
+     "wins": 1
+    },
+    "soldier": {
+     "dealing": 21169,
+     "healing": 2300,
+     "matches": 2,
+     "rating": 130,
+     "tanking": 12256,
+     "wins": 0
+    },
+    "swordman": {
+     "dealing": 89760,
+     "healing": 19780,
+     "matches": 6,
+     "rating": 432,
+     "tanking": 62684,
+     "wins": 3
+    },
+    "vampire": {
+     "dealing": 96967,
+     "healing": 50262,
+     "matches": 5,
+     "rating": 359,
+     "tanking": 60195,
+     "wins": 3
+    }
+   }
+  },
+  "14": {
+   "champion_detail": {
+    "amazon": {
+     "dealing": 61663,
+     "healing": 28778,
+     "matches": 3,
+     "rating": 216,
+     "tanking": 66726,
+     "wins": 1
+    },
+    "archer": {
+     "dealing": 13466,
+     "healing": 3658,
+     "matches": 1,
+     "rating": 66,
+     "tanking": 12000,
+     "wins": 0
+    },
+    "executioner": {
+     "dealing": 111408,
+     "healing": 60788,
+     "matches": 9,
+     "rating": 620,
+     "tanking": 117241,
+     "wins": 5
+    },
+    "gambler": {
+     "dealing": 25647,
+     "healing": 5703,
+     "matches": 3,
+     "rating": 201,
+     "tanking": 21433,
+     "wins": 1
+    },
+    "illusionist": {
+     "dealing": 84230,
+     "healing": 12525,
+     "matches": 4,
+     "rating": 299,
+     "tanking": 40979,
+     "wins": 3
+    },
+    "lancer": {
+     "dealing": 35805,
+     "healing": 19416,
+     "matches": 3,
+     "rating": 211,
+     "tanking": 38685,
+     "wins": 3
+    },
+    "pole_warrior": {
+     "dealing": 207343,
+     "healing": 108825,
+     "matches": 14,
+     "rating": 1046,
+     "tanking": 195578,
+     "wins": 10
+    },
+    "pyromancer": {
+     "dealing": 104769,
+     "healing": 25929,
+     "matches": 7,
+     "rating": 504,
+     "tanking": 57275,
+     "wins": 5
+    },
+    "soldier": {
+     "dealing": 21214,
+     "healing": 4245,
+     "matches": 2,
+     "rating": 144,
+     "tanking": 6012,
+     "wins": 2
+    }
+   }
+  },
+  "15": {
+   "champion_detail": {
+    "amazon": {
+     "dealing": 36774,
+     "healing": 0,
+     "matches": 3,
+     "rating": 213,
+     "tanking": 44666,
+     "wins": 2
+    },
+    "cavalry_knight": {
+     "dealing": 14185,
+     "healing": 5787,
+     "matches": 2,
+     "rating": 144,
+     "tanking": 19289,
+     "wins": 1
+    },
+    "fighter": {
+     "dealing": 66425,
+     "healing": 35425,
+     "matches": 5,
+     "rating": 368,
+     "tanking": 102226,
+     "wins": 1
+    },
+    "gambler": {
+     "dealing": 48156,
+     "healing": 0,
+     "matches": 5,
+     "rating": 316,
+     "tanking": 68616,
+     "wins": 0
+    },
+    "jiangshi": {
+     "dealing": 228295,
+     "healing": 154859,
+     "matches": 18,
+     "rating": 1289,
+     "tanking": 305287,
+     "wins": 6
+    },
+    "magic_knight": {
+     "dealing": 18131,
+     "healing": 0,
+     "matches": 1,
+     "rating": 74,
+     "tanking": 10324,
+     "wins": 0
+    },
+    "pole_warrior": {
+     "dealing": 32061,
+     "healing": 13717,
+     "matches": 2,
+     "rating": 139,
+     "tanking": 43158,
+     "wins": 1
+    },
+    "pyromancer": {
+     "dealing": 32209,
+     "healing": 0,
+     "matches": 2,
+     "rating": 136,
+     "tanking": 15839,
+     "wins": 1
+    },
+    "soldier": {
+     "dealing": 76274,
+     "healing": 7802,
+     "matches": 3,
+     "rating": 213,
+     "tanking": 34313,
+     "wins": 2
+    },
+    "vampire": {
+     "dealing": 49956,
+     "healing": 34502,
+     "matches": 3,
+     "rating": 209,
+     "tanking": 55335,
+     "wins": 0
+    }
+   }
+  },
+  "16": {
+   "champion_detail": {
+    "amazon": {
+     "dealing": 7757,
+     "healing": 961,
+     "matches": 1,
+     "rating": 62,
+     "tanking": 11689,
+     "wins": 0
+    },
+    "archer": {
+     "dealing": 14039,
+     "healing": 2686,
+     "matches": 1,
+     "rating": 64,
+     "tanking": 10503,
+     "wins": 0
+    },
+    "cavalry_knight": {
+     "dealing": 13307,
+     "healing": 11295,
+     "matches": 2,
+     "rating": 136,
+     "tanking": 35833,
+     "wins": 0
+    },
+    "dual_blader": {
+     "dealing": 46423,
+     "healing": 7986,
+     "matches": 3,
+     "rating": 200,
+     "tanking": 48646,
+     "wins": 1
+    },
+    "executioner": {
+     "dealing": 17363,
+     "healing": 455,
+     "matches": 2,
+     "rating": 136,
+     "tanking": 15592,
+     "wins": 1
+    },
+    "fighter": {
+     "dealing": 44470,
+     "healing": 28093,
+     "matches": 5,
+     "rating": 383,
+     "tanking": 62843,
+     "wins": 3
+    },
+    "gambler": {
+     "dealing": 70298,
+     "healing": 8251,
+     "matches": 4,
+     "rating": 278,
+     "tanking": 71948,
+     "wins": 2
+    },
+    "illusionist": {
+     "dealing": 15023,
+     "healing": 0,
+     "matches": 1,
+     "rating": 76,
+     "tanking": 6426,
+     "wins": 1
+    },
+    "jiangshi": {
+     "dealing": 5254,
+     "healing": 3322,
+     "matches": 1,
+     "rating": 72,
+     "tanking": 6633,
+     "wins": 0
+    },
+    "lancer": {
+     "dealing": 13604,
+     "healing": 385,
+     "matches": 1,
+     "rating": 73,
+     "tanking": 8429,
+     "wins": 0
+    },
+    "magic_knight": {
+     "dealing": 19541,
+     "healing": 1951,
+     "matches": 2,
+     "rating": 139,
+     "tanking": 22753,
+     "wins": 0
+    },
+    "pyromancer": {
+     "dealing": 65338,
+     "healing": 2722,
+     "matches": 4,
+     "rating": 271,
+     "tanking": 29191,
+     "wins": 2
+    },
+    "soldier": {
+     "dealing": 54443,
+     "healing": 7544,
+     "matches": 3,
+     "rating": 198,
+     "tanking": 32620,
+     "wins": 0
+    },
+    "swordman": {
+     "dealing": 168829,
+     "healing": 48205,
+     "matches": 11,
+     "rating": 764,
+     "tanking": 148111,
+     "wins": 2
+    },
+    "vampire": {
+     "dealing": 49683,
+     "healing": 23224,
+     "matches": 3,
+     "rating": 219,
+     "tanking": 34444,
+     "wins": 2
+    }
+   }
+  },
+  "17": {
+   "champion_detail": {
+    "cavalry_knight": {
+     "dealing": 20139,
+     "healing": 8809,
+     "matches": 3,
+     "rating": 219,
+     "tanking": 43500,
+     "wins": 2
+    },
+    "dual_blader": {
+     "dealing": 8427,
+     "healing": 0,
+     "matches": 1,
+     "rating": 66,
+     "tanking": 12949,
+     "wins": 0
+    },
+    "executioner": {
+     "dealing": 12688,
+     "healing": 850,
+     "matches": 1,
+     "rating": 67,
+     "tanking": 16287,
+     "wins": 0
+    },
+    "fighter": {
+     "dealing": 43266,
+     "healing": 28100,
+     "matches": 5,
+     "rating": 360,
+     "tanking": 85382,
+     "wins": 1
+    },
+    "hammerer": {
+     "dealing": 5793,
+     "healing": 0,
+     "matches": 1,
+     "rating": 79,
+     "tanking": 6029,
+     "wins": 1
+    },
+    "illusionist": {
+     "dealing": 11976,
+     "healing": 0,
+     "matches": 1,
+     "rating": 72,
+     "tanking": 13081,
+     "wins": 1
+    },
+    "jiangshi": {
+     "dealing": 47955,
+     "healing": 29446,
+     "matches": 5,
+     "rating": 377,
+     "tanking": 73017,
+     "wins": 2
+    },
+    "knight": {
+     "dealing": 6631,
+     "healing": 40,
+     "matches": 2,
+     "rating": 147,
+     "tanking": 46734,
+     "wins": 0
+    },
+    "magic_knight": {
+     "dealing": 8039,
+     "healing": 0,
+     "matches": 2,
+     "rating": 137,
+     "tanking": 12363,
+     "wins": 1
+    },
+    "monk": {
+     "dealing": 21967,
+     "healing": 75021,
+     "matches": 8,
+     "rating": 552,
+     "tanking": 114174,
+     "wins": 2
+    },
+    "pole_warrior": {
+     "dealing": 30419,
+     "healing": 4738,
+     "matches": 4,
+     "rating": 275,
+     "tanking": 68785,
+     "wins": 2
+    },
+    "pythoness": {
+     "dealing": 42847,
+     "healing": 122434,
+     "matches": 7,
+     "rating": 486,
+     "tanking": 85492,
+     "wins": 2
+    },
+    "shield_bearer": {
+     "dealing": 5061,
+     "healing": 0,
+     "matches": 3,
+     "rating": 194,
+     "tanking": 44300,
+     "wins": 0
+    },
+    "swordman": {
+     "dealing": 9328,
+     "healing": 2402,
+     "matches": 1,
+     "rating": 62,
+     "tanking": 16805,
+     "wins": 0
+    }
+   }
+  },
+  "18": {
+   "champion_detail": {
+    "amazon": {
+     "dealing": 25793,
+     "healing": 19850,
+     "matches": 1,
+     "rating": 94,
+     "tanking": 32199,
+     "wins": 1
+    },
+    "cf_k_sante": {
+     "dealing": 12460,
+     "healing": 10439,
+     "matches": 1,
+     "rating": 73,
+     "tanking": 20616,
+     "wins": 0
+    },
+    "gambler": {
+     "dealing": 21433,
+     "healing": 5569,
+     "matches": 2,
+     "rating": 132,
+     "tanking": 16360,
+     "wins": 1
+    },
+    "harpy": {
+     "dealing": 16435,
+     "healing": 4755,
+     "matches": 1,
+     "rating": 82,
+     "tanking": 8986,
+     "wins": 1
+    },
+    "illusionist": {
+     "dealing": 29724,
+     "healing": 6573,
+     "matches": 2,
+     "rating": 147,
+     "tanking": 13957,
+     "wins": 1
+    },
+    "lancer": {
+     "dealing": 34219,
+     "healing": 23106,
+     "matches": 1,
+     "rating": 75,
+     "tanking": 30111,
+     "wins": 0
+    },
+    "pole_warrior": {
+     "dealing": 13757,
+     "healing": 3518,
+     "matches": 1,
+     "rating": 72,
+     "tanking": 9913,
+     "wins": 0
+    },
+    "swordman": {
+     "dealing": 10521,
+     "healing": 6336,
+     "matches": 2,
+     "rating": 134,
+     "tanking": 13908,
+     "wins": 1
+    },
+    "test_mod_lucian": {
+     "dealing": 22243,
+     "healing": 6545,
+     "matches": 1,
+     "rating": 72,
+     "tanking": 11821,
+     "wins": 1
+    }
+   }
+  },
+  "19": {
+   "champion_detail": {
+    "archer": {
+     "dealing": 17410,
+     "healing": 1397,
+     "matches": 1,
+     "rating": 71,
+     "tanking": 8676,
+     "wins": 1
+    },
+    "cavalry_knight": {
+     "dealing": 4531,
+     "healing": 1451,
+     "matches": 1,
+     "rating": 73,
+     "tanking": 11904,
+     "wins": 0
+    },
+    "dual_blader": {
+     "dealing": 9583,
+     "healing": 2121,
+     "matches": 1,
+     "rating": 80,
+     "tanking": 9472,
+     "wins": 1
+    },
+    "fighter": {
+     "dealing": 31992,
+     "healing": 14043,
+     "matches": 6,
+     "rating": 437,
+     "tanking": 53560,
+     "wins": 5
+    },
+    "jiangshi": {
+     "dealing": 23280,
+     "healing": 17825,
+     "matches": 4,
+     "rating": 288,
+     "tanking": 42641,
+     "wins": 2
+    },
+    "ogre": {
+     "dealing": 13091,
+     "healing": 1118,
+     "matches": 1,
+     "rating": 75,
+     "tanking": 20710,
+     "wins": 1
+    },
+    "shield_bearer": {
+     "dealing": 12182,
+     "healing": 0,
+     "matches": 5,
+     "rating": 369,
+     "tanking": 82693,
+     "wins": 3
+    }
+   }
+  },
+  "2": {
+   "champion_detail": {
+    "amazon": {
+     "dealing": 4583,
+     "healing": 936,
+     "matches": 1,
+     "rating": 68,
+     "tanking": 4123,
+     "wins": 0
+    },
+    "berserker": {
+     "dealing": 48011,
+     "healing": 26900,
+     "matches": 3,
+     "rating": 216,
+     "tanking": 63859,
+     "wins": 1
+    },
+    "cavalry_knight": {
+     "dealing": 42538,
+     "healing": 25472,
+     "matches": 5,
+     "rating": 353,
+     "tanking": 87931,
+     "wins": 1
+    },
+    "construct": {
+     "dealing": 4164,
+     "healing": 105,
+     "matches": 1,
+     "rating": 69,
+     "tanking": 7219,
+     "wins": 0
+    },
+    "demon": {
+     "dealing": 72531,
+     "healing": 8518,
+     "matches": 6,
+     "rating": 422,
+     "tanking": 72145,
+     "wins": 2
+    },
+    "dual_blader": {
+     "dealing": 78455,
+     "healing": 17357,
+     "matches": 7,
+     "rating": 506,
+     "tanking": 75175,
+     "wins": 2
+    },
+    "ghost": {
+     "dealing": 14709,
+     "healing": 1431,
+     "matches": 2,
+     "rating": 139,
+     "tanking": 15005,
+     "wins": 1
+    },
+    "gunner": {
+     "dealing": 63212,
+     "healing": 1064,
+     "matches": 5,
+     "rating": 347,
+     "tanking": 47717,
+     "wins": 1
+    },
+    "harpy": {
+     "dealing": 7930,
+     "healing": 1832,
+     "matches": 1,
+     "rating": 64,
+     "tanking": 7904,
+     "wins": 0
+    },
+    "lancer": {
+     "dealing": 66322,
+     "healing": 9814,
+     "matches": 5,
+     "rating": 334,
+     "tanking": 73712,
+     "wins": 1
+    },
+    "ninja": {
+     "dealing": 22132,
+     "healing": 6751,
+     "matches": 2,
+     "rating": 144,
+     "tanking": 16822,
+     "wins": 1
+    },
+    "priest": {
+     "dealing": 328,
+     "healing": 11801,
+     "matches": 1,
+     "rating": 66,
+     "tanking": 4579,
+     "wins": 0
+    },
+    "siege_breaker": {
+     "dealing": 5008,
+     "healing": 0,
+     "matches": 1,
+     "rating": 65,
+     "tanking": 9227,
+     "wins": 0
+    },
+    "soldier": {
+     "dealing": 8962,
+     "healing": 0,
+     "matches": 1,
+     "rating": 63,
+     "tanking": 9229,
+     "wins": 0
+    },
+    "swordman": {
+     "dealing": 33662,
+     "healing": 11724,
+     "matches": 3,
+     "rating": 201,
+     "tanking": 32472,
+     "wins": 1
+    },
+    "vampire": {
+     "dealing": 114050,
+     "healing": 90833,
+     "matches": 8,
+     "rating": 528,
+     "tanking": 101226,
+     "wins": 2
+    }
+   }
+  },
+  "20": {
+   "champion_detail": {
+    "cf_k_sante": {
+     "dealing": 43696,
+     "healing": 23344,
+     "matches": 3,
+     "rating": 202,
+     "tanking": 44729,
+     "wins": 1
+    },
+    "harpy": {
+     "dealing": 25347,
+     "healing": 6114,
+     "matches": 1,
+     "rating": 73,
+     "tanking": 11205,
+     "wins": 1
+    },
+    "lancer": {
+     "dealing": 13010,
+     "healing": 4148,
+     "matches": 1,
+     "rating": 74,
+     "tanking": 6516,
+     "wins": 1
+    },
+    "pyromancer": {
+     "dealing": 12781,
+     "healing": 2894,
+     "matches": 1,
+     "rating": 75,
+     "tanking": 3104,
+     "wins": 1
+    },
+    "swordman": {
+     "dealing": 24751,
+     "healing": 11433,
+     "matches": 2,
+     "rating": 141,
+     "tanking": 20356,
+     "wins": 1
+    },
+    "test_mod_lucian": {
+     "dealing": 36036,
+     "healing": 9315,
+     "matches": 2,
+     "rating": 140,
+     "tanking": 15202,
+     "wins": 2
+    }
+   }
+  },
+  "21": {
+   "champion_detail": {
+    "harpy": {
+     "dealing": 8400,
+     "healing": 2682,
+     "matches": 1,
+     "rating": 62,
+     "tanking": 8783,
+     "wins": 0
+    },
+    "siege_breaker": {
+     "dealing": 9620,
+     "healing": 2881,
+     "matches": 1,
+     "rating": 80,
+     "tanking": 15263,
+     "wins": 0
+    }
+   }
+  },
+  "22": {
+   "champion_detail": {
+    "cf_k_sante": {
+     "dealing": 7264,
+     "healing": 4858,
+     "matches": 1,
+     "rating": 64,
+     "tanking": 12261,
+     "wins": 0
+    },
+    "fighter": {
+     "dealing": 18603,
+     "healing": 10294,
+     "matches": 1,
+     "rating": 72,
+     "tanking": 21923,
+     "wins": 0
+    },
+    "lancer": {
+     "dealing": 22326,
+     "healing": 8351,
+     "matches": 2,
+     "rating": 142,
+     "tanking": 21397,
+     "wins": 2
+    },
+    "pole_warrior": {
+     "dealing": 55797,
+     "healing": 23467,
+     "matches": 4,
+     "rating": 276,
+     "tanking": 57192,
+     "wins": 0
+    }
+   }
+  },
+  "23": {
+   "champion_detail": {
+    "berserker": {
+     "dealing": 18173,
+     "healing": 11612,
+     "matches": 2,
+     "rating": 145,
+     "tanking": 12452,
+     "wins": 1
+    },
+    "lancer": {
+     "dealing": 7708,
+     "healing": 1444,
+     "matches": 1,
+     "rating": 68,
+     "tanking": 8004,
+     "wins": 0
+    },
+    "siege_breaker": {
+     "dealing": 20858,
+     "healing": 5091,
+     "matches": 1,
+     "rating": 79,
+     "tanking": 9240,
+     "wins": 0
+    },
+    "soldier": {
+     "dealing": 7217,
+     "healing": 3655,
+     "matches": 1,
+     "rating": 66,
+     "tanking": 9346,
+     "wins": 0
+    }
+   }
+  },
+  "24": {
+   "champion_detail": {
+    "amazon": {
+     "dealing": 111179,
+     "healing": 99978,
+     "matches": 8,
+     "rating": 597,
+     "tanking": 141897,
+     "wins": 6
+    },
+    "executioner": {
+     "dealing": 7979,
+     "healing": 4726,
+     "matches": 1,
+     "rating": 62,
+     "tanking": 10059,
+     "wins": 0
+    },
+    "fighter": {
+     "dealing": 7536,
+     "healing": 3772,
+     "matches": 1,
+     "rating": 73,
+     "tanking": 7615,
+     "wins": 1
+    },
+    "harpy": {
+     "dealing": 11429,
+     "healing": 3487,
+     "matches": 1,
+     "rating": 63,
+     "tanking": 11531,
+     "wins": 0
+    },
+    "pole_warrior": {
+     "dealing": 6539,
+     "healing": 3963,
+     "matches": 1,
+     "rating": 72,
+     "tanking": 7715,
+     "wins": 0
+    },
+    "test_mod_lucian": {
+     "dealing": 10798,
+     "healing": 4390,
+     "matches": 1,
+     "rating": 65,
+     "tanking": 7548,
+     "wins": 0
+    }
+   }
+  },
+  "25": {
+   "champion_detail": {
+    "amazon": {
+     "dealing": 10102,
+     "healing": 6229,
+     "matches": 1,
+     "rating": 72,
+     "tanking": 8310,
+     "wins": 1
+    },
+    "berserker": {
+     "dealing": 15013,
+     "healing": 6952,
+     "matches": 1,
+     "rating": 74,
+     "tanking": 6968,
+     "wins": 1
+    },
+    "gunner": {
+     "dealing": 10096,
+     "healing": 2828,
+     "matches": 1,
+     "rating": 71,
+     "tanking": 6583,
+     "wins": 1
+    },
+    "lancer": {
+     "dealing": 39124,
+     "healing": 7664,
+     "matches": 3,
+     "rating": 196,
+     "tanking": 33930,
+     "wins": 1
+    },
+    "siege_breaker": {
+     "dealing": 23615,
+     "healing": 3416,
+     "matches": 2,
+     "rating": 150,
+     "tanking": 12447,
+     "wins": 1
+    },
+    "swordman": {
+     "dealing": 13248,
+     "healing": 5270,
+     "matches": 1,
+     "rating": 69,
+     "tanking": 8662,
+     "wins": 1
+    },
+    "test_mod_lucian": {
+     "dealing": 21477,
+     "healing": 4326,
+     "matches": 1,
+     "rating": 76,
+     "tanking": 4314,
+     "wins": 1
+    }
+   }
+  },
+  "26": {
+   "champion_detail": {
+    "harpy": {
+     "dealing": 18468,
+     "healing": 3297,
+     "matches": 1,
+     "rating": 80,
+     "tanking": 8412,
+     "wins": 1
+    },
+    "illusionist": {
+     "dealing": 107520,
+     "healing": 0,
+     "matches": 6,
+     "rating": 454,
+     "tanking": 46168,
+     "wins": 4
+    },
+    "lancer": {
+     "dealing": 19049,
+     "healing": 882,
+     "matches": 2,
+     "rating": 143,
+     "tanking": 14483,
+     "wins": 2
+    },
+    "vampire": {
+     "dealing": 8276,
+     "healing": 8119,
+     "matches": 1,
+     "rating": 61,
+     "tanking": 9933,
+     "wins": 0
+    }
+   }
+  },
+  "27": {
+   "champion_detail": {
+    "cavalry_knight": {
+     "dealing": 23207,
+     "healing": 16590,
+     "matches": 3,
+     "rating": 231,
+     "tanking": 45762,
+     "wins": 1
+    },
+    "jiangshi": {
+     "dealing": 11387,
+     "healing": 7822,
+     "matches": 2,
+     "rating": 138,
+     "tanking": 17140,
+     "wins": 1
+    },
+    "monk": {
+     "dealing": 8309,
+     "healing": 25450,
+     "matches": 2,
+     "rating": 144,
+     "tanking": 20728,
+     "wins": 2
+    },
+    "pyromancer": {
+     "dealing": 14907,
+     "healing": 0,
+     "matches": 1,
+     "rating": 71,
+     "tanking": 6425,
+     "wins": 1
+    },
+    "shield_bearer": {
+     "dealing": 4470,
+     "healing": 0,
+     "matches": 2,
+     "rating": 149,
+     "tanking": 19248,
+     "wins": 2
+    }
+   }
+  },
+  "28": {
+   "champion_detail": {
+    "harpy": {
+     "dealing": 24858,
+     "healing": 7004,
+     "matches": 2,
+     "rating": 141,
+     "tanking": 22070,
+     "wins": 0
+    },
+    "illusionist": {
+     "dealing": 18443,
+     "healing": 0,
+     "matches": 1,
+     "rating": 80,
+     "tanking": 6359,
+     "wins": 1
+    },
+    "jiangshi": {
+     "dealing": 9562,
+     "healing": 9273,
+     "matches": 1,
+     "rating": 68,
+     "tanking": 17232,
+     "wins": 0
+    },
+    "lancer": {
+     "dealing": 9957,
+     "healing": 0,
+     "matches": 1,
+     "rating": 66,
+     "tanking": 10508,
+     "wins": 0
+    },
+    "pyromancer": {
+     "dealing": 22971,
+     "healing": 0,
+     "matches": 1,
+     "rating": 70,
+     "tanking": 9746,
+     "wins": 0
+    },
+    "test_mod_lucian": {
+     "dealing": 11915,
+     "healing": 2961,
+     "matches": 1,
+     "rating": 71,
+     "tanking": 6884,
+     "wins": 1
+    },
+    "vampire": {
+     "dealing": 36636,
+     "healing": 15528,
+     "matches": 1,
+     "rating": 68,
+     "tanking": 18021,
+     "wins": 0
+    }
+   }
+  },
+  "29": {
+   "champion_detail": {
+    "dual_blader": {
+     "dealing": 5658,
+     "healing": 1640,
+     "matches": 1,
+     "rating": 64,
+     "tanking": 10387,
+     "wins": 0
+    },
+    "gunner": {
+     "dealing": 7607,
+     "healing": 0,
+     "matches": 1,
+     "rating": 72,
+     "tanking": 4805,
+     "wins": 1
+    },
+    "harpy": {
+     "dealing": 12444,
+     "healing": 2663,
+     "matches": 1,
+     "rating": 65,
+     "tanking": 8220,
+     "wins": 0
+    },
+    "illusionist": {
+     "dealing": 11708,
+     "healing": 0,
+     "matches": 1,
+     "rating": 80,
+     "tanking": 5318,
+     "wins": 1
+    },
+    "swordman": {
+     "dealing": 12268,
+     "healing": 2267,
+     "matches": 1,
+     "rating": 70,
+     "tanking": 12122,
+     "wins": 1
+    },
+    "test_mod_lucian": {
+     "dealing": 29739,
+     "healing": 5445,
+     "matches": 1,
+     "rating": 82,
+     "tanking": 9892,
+     "wins": 1
+    },
+    "vampire": {
+     "dealing": 32400,
+     "healing": 24574,
+     "matches": 2,
+     "rating": 130,
+     "tanking": 29151,
+     "wins": 0
+    }
+   }
+  },
+  "3": {
+   "champion_detail": {
+    "candygel": {
+     "dealing": 3933,
+     "healing": 13007,
+     "matches": 1,
+     "rating": 71,
+     "tanking": 8312,
+     "wins": 1
+    },
+    "harpy": {
+     "dealing": 8918,
+     "healing": 3442,
+     "matches": 1,
+     "rating": 71,
+     "tanking": 7937,
+     "wins": 1
+    },
+    "jiangshi": {
+     "dealing": 3032,
+     "healing": 1128,
+     "matches": 1,
+     "rating": 66,
+     "tanking": 8172,
+     "wins": 0
+    },
+    "lancer": {
+     "dealing": 5971,
+     "healing": 1706,
+     "matches": 1,
+     "rating": 69,
+     "tanking": 3227,
+     "wins": 1
+    },
+    "soldier": {
+     "dealing": 10965,
+     "healing": 0,
+     "matches": 1,
+     "rating": 60,
+     "tanking": 8759,
+     "wins": 0
+    },
+    "vampire": {
+     "dealing": 10190,
+     "healing": 6964,
+     "matches": 1,
+     "rating": 70,
+     "tanking": 5449,
+     "wins": 0
+    }
+   }
+  },
+  "30": {
+   "champion_detail": {
+    "fighter": {
+     "dealing": 42882,
+     "healing": 13493,
+     "matches": 4,
+     "rating": 303,
+     "tanking": 45913,
+     "wins": 4
+    },
+    "magic_knight": {
+     "dealing": 79025,
+     "healing": 0,
+     "matches": 6,
+     "rating": 429,
+     "tanking": 59459,
+     "wins": 3
+    }
+   }
+  },
+  "31": {
+   "champion_detail": {
+    "berserker": {
+     "dealing": 55762,
+     "healing": 36397,
+     "matches": 4,
+     "rating": 298,
+     "tanking": 42581,
+     "wins": 2
+    },
+    "lancer": {
+     "dealing": 11610,
+     "healing": 0,
+     "matches": 1,
+     "rating": 66,
+     "tanking": 12671,
+     "wins": 0
+    },
+    "siege_breaker": {
+     "dealing": 11702,
+     "healing": 5018,
+     "matches": 1,
+     "rating": 66,
+     "tanking": 16116,
+     "wins": 0
+    },
+    "vampire": {
+     "dealing": 18035,
+     "healing": 13959,
+     "matches": 2,
+     "rating": 129,
+     "tanking": 18877,
+     "wins": 0
+    }
+   }
+  },
+  "32": {
+   "champion_detail": {
+    "cf_k_sante": {
+     "dealing": 74842,
+     "healing": 31709,
+     "matches": 7,
+     "rating": 499,
+     "tanking": 106727,
+     "wins": 4
+    },
+    "fighter": {
+     "dealing": 22997,
+     "healing": 13402,
+     "matches": 2,
+     "rating": 154,
+     "tanking": 24244,
+     "wins": 2
+    },
+    "harpy": {
+     "dealing": 13444,
+     "healing": 2661,
+     "matches": 1,
+     "rating": 58,
+     "tanking": 11041,
+     "wins": 0
+    },
+    "illusionist": {
+     "dealing": 12774,
+     "healing": 0,
+     "matches": 1,
+     "rating": 65,
+     "tanking": 10296,
+     "wins": 0
+    },
+    "swordman": {
+     "dealing": 31173,
+     "healing": 4731,
+     "matches": 2,
+     "rating": 138,
+     "tanking": 18696,
+     "wins": 2
+    },
+    "test_mod_lucian": {
+     "dealing": 24991,
+     "healing": 3803,
+     "matches": 1,
+     "rating": 73,
+     "tanking": 4664,
+     "wins": 1
+    },
+    "vampire": {
+     "dealing": 92421,
+     "healing": 56171,
+     "matches": 5,
+     "rating": 374,
+     "tanking": 55581,
+     "wins": 5
+    }
+   }
+  },
+  "33": {
+   "champion_detail": {
+    "amazon": {
+     "dealing": 17211,
+     "healing": 6199,
+     "matches": 2,
+     "rating": 124,
+     "tanking": 43608,
+     "wins": 0
+    },
+    "dual_blader": {
+     "dealing": 10839,
+     "healing": 0,
+     "matches": 1,
+     "rating": 73,
+     "tanking": 17672,
+     "wins": 1
+    },
+    "fighter": {
+     "dealing": 8696,
+     "healing": 7020,
+     "matches": 1,
+     "rating": 80,
+     "tanking": 17278,
+     "wins": 1
+    },
+    "illusionist": {
+     "dealing": 67781,
+     "healing": 0,
+     "matches": 3,
+     "rating": 221,
+     "tanking": 47070,
+     "wins": 2
+    },
+    "jiangshi": {
+     "dealing": 20794,
+     "healing": 13778,
+     "matches": 2,
+     "rating": 134,
+     "tanking": 29603,
+     "wins": 0
+    },
+    "siege_breaker": {
+     "dealing": 6158,
+     "healing": 651,
+     "matches": 1,
+     "rating": 65,
+     "tanking": 10642,
+     "wins": 0
+    },
+    "swordman": {
+     "dealing": 28428,
+     "healing": 6802,
+     "matches": 2,
+     "rating": 136,
+     "tanking": 24198,
+     "wins": 1
+    }
+   }
+  },
+  "34": {
+   "champion_detail": {
+    "dual_blader": {
+     "dealing": 31955,
+     "healing": 7006,
+     "matches": 1,
+     "rating": 76,
+     "tanking": 10684,
+     "wins": 1
+    },
+    "fighter": {
+     "dealing": 9529,
+     "healing": 7161,
+     "matches": 1,
+     "rating": 64,
+     "tanking": 19233,
+     "wins": 0
+    },
+    "illusionist": {
+     "dealing": 12411,
+     "healing": 0,
+     "matches": 1,
+     "rating": 78,
+     "tanking": 11080,
+     "wins": 0
+    },
+    "jiangshi": {
+     "dealing": 8470,
+     "healing": 4429,
+     "matches": 1,
+     "rating": 79,
+     "tanking": 15078,
+     "wins": 1
+    },
+    "swordman": {
+     "dealing": 98119,
+     "healing": 18196,
+     "matches": 6,
+     "rating": 410,
+     "tanking": 76229,
+     "wins": 2
+    },
+    "test_mod_lucian": {
+     "dealing": 30468,
+     "healing": 5351,
+     "matches": 1,
+     "rating": 82,
+     "tanking": 12317,
+     "wins": 1
+    },
+    "vampire": {
+     "dealing": 23371,
+     "healing": 15021,
+     "matches": 1,
+     "rating": 71,
+     "tanking": 16283,
+     "wins": 0
+    }
+   }
+  },
+  "35": {
+   "champion_detail": {
+    "dual_blader": {
+     "dealing": 8899,
+     "healing": 1888,
+     "matches": 2,
+     "rating": 133,
+     "tanking": 22246,
+     "wins": 0
+    },
+    "illusionist": {
+     "dealing": 16846,
+     "healing": 0,
+     "matches": 1,
+     "rating": 75,
+     "tanking": 12921,
+     "wins": 1
+    },
+    "jiangshi": {
+     "dealing": 9531,
+     "healing": 7163,
+     "matches": 1,
+     "rating": 72,
+     "tanking": 10972,
+     "wins": 1
+    },
+    "knight": {
+     "dealing": 1939,
+     "healing": 0,
+     "matches": 1,
+     "rating": 63,
+     "tanking": 11032,
+     "wins": 0
+    },
+    "monk": {
+     "dealing": 13129,
+     "healing": 60409,
+     "matches": 5,
+     "rating": 373,
+     "tanking": 83545,
+     "wins": 3
+    },
+    "pythoness": {
+     "dealing": 6673,
+     "healing": 13085,
+     "matches": 1,
+     "rating": 68,
+     "tanking": 15111,
+     "wins": 0
+    },
+    "shield_bearer": {
+     "dealing": 3636,
+     "healing": 0,
+     "matches": 1,
+     "rating": 69,
+     "tanking": 18634,
+     "wins": 0
+    }
+   }
+  },
+  "36": {
+   "champion_detail": {
+    "cavalry_knight": {
+     "dealing": 22158,
+     "healing": 16994,
+     "matches": 2,
+     "rating": 152,
+     "tanking": 45911,
+     "wins": 0
+    },
+    "fighter": {
+     "dealing": 21195,
+     "healing": 19711,
+     "matches": 1,
+     "rating": 74,
+     "tanking": 30774,
+     "wins": 1
+    },
+    "gunner": {
+     "dealing": 15284,
+     "healing": 0,
+     "matches": 2,
+     "rating": 136,
+     "tanking": 13036,
+     "wins": 1
+    },
+    "illusionist": {
+     "dealing": 34037,
+     "healing": 0,
+     "matches": 2,
+     "rating": 132,
+     "tanking": 21745,
+     "wins": 0
+    },
+    "pyromancer": {
+     "dealing": 17547,
+     "healing": 300,
+     "matches": 1,
+     "rating": 72,
+     "tanking": 3334,
+     "wins": 1
+    },
+    "soldier": {
+     "dealing": 10934,
+     "healing": 1551,
+     "matches": 1,
+     "rating": 75,
+     "tanking": 5473,
+     "wins": 1
+    },
+    "swordman": {
+     "dealing": 33788,
+     "healing": 6907,
+     "matches": 3,
+     "rating": 220,
+     "tanking": 27852,
+     "wins": 2
+    },
+    "test_mod_lucian": {
+     "dealing": 22075,
+     "healing": 3005,
+     "matches": 1,
+     "rating": 77,
+     "tanking": 6061,
+     "wins": 1
+    }
+   }
+  },
+  "37": {
+   "champion_detail": {
+    "fighter": {
+     "dealing": 6337,
+     "healing": 3968,
+     "matches": 1,
+     "rating": 73,
+     "tanking": 6873,
+     "wins": 0
+    },
+    "illusionist": {
+     "dealing": 18900,
+     "healing": 0,
+     "matches": 2,
+     "rating": 157,
+     "tanking": 6437,
+     "wins": 2
+    },
+    "magic_knight": {
+     "dealing": 36194,
+     "healing": 1120,
+     "matches": 3,
+     "rating": 212,
+     "tanking": 34090,
+     "wins": 1
+    },
+    "siege_breaker": {
+     "dealing": 59285,
+     "healing": 8189,
+     "matches": 4,
+     "rating": 279,
+     "tanking": 37416,
+     "wins": 2
+    },
+    "swordman": {
+     "dealing": 21156,
+     "healing": 4518,
+     "matches": 1,
+     "rating": 70,
+     "tanking": 12393,
+     "wins": 0
+    },
+    "test_mod_lucian": {
+     "dealing": 44703,
+     "healing": 7625,
+     "matches": 2,
+     "rating": 145,
+     "tanking": 10809,
+     "wins": 2
+    },
+    "vampire": {
+     "dealing": 30489,
+     "healing": 21787,
+     "matches": 3,
+     "rating": 210,
+     "tanking": 20214,
+     "wins": 2
+    }
+   }
+  },
+  "38": {
+   "champion_detail": {
+    "amazon": {
+     "dealing": 16156,
+     "healing": 9040,
+     "matches": 1,
+     "rating": 65,
+     "tanking": 25082,
+     "wins": 0
+    },
+    "gambler": {
+     "dealing": 24728,
+     "healing": 4519,
+     "matches": 1,
+     "rating": 74,
+     "tanking": 16267,
+     "wins": 0
+    },
+    "harpy": {
+     "dealing": 16974,
+     "healing": 1844,
+     "matches": 1,
+     "rating": 73,
+     "tanking": 8645,
+     "wins": 1
+    },
+    "jiangshi": {
+     "dealing": 19695,
+     "healing": 10934,
+     "matches": 2,
+     "rating": 153,
+     "tanking": 20918,
+     "wins": 1
+    },
+    "magic_knight": {
+     "dealing": 10575,
+     "healing": 0,
+     "matches": 1,
+     "rating": 68,
+     "tanking": 8843,
+     "wins": 0
+    },
+    "siege_breaker": {
+     "dealing": 45777,
+     "healing": 7123,
+     "matches": 3,
+     "rating": 227,
+     "tanking": 35760,
+     "wins": 3
+    }
+   }
+  },
+  "39": {
+   "champion_detail": {
+    "jiangshi": {
+     "dealing": 16287,
+     "healing": 12361,
+     "matches": 4,
+     "rating": 293,
+     "tanking": 29183,
+     "wins": 3
+    },
+    "magic_knight": {
+     "dealing": 16843,
+     "healing": 0,
+     "matches": 2,
+     "rating": 146,
+     "tanking": 14995,
+     "wins": 1
+    },
+    "monk": {
+     "dealing": 1173,
+     "healing": 5480,
+     "matches": 1,
+     "rating": 69,
+     "tanking": 7751,
+     "wins": 0
+    }
+   }
+  },
+  "4": {
+   "champion_detail": {
+    "amazon": {
+     "dealing": 24153,
+     "healing": 12156,
+     "matches": 2,
+     "rating": 145,
+     "tanking": 19960,
+     "wins": 2
+    },
+    "archer": {
+     "dealing": 25454,
+     "healing": 8025,
+     "matches": 2,
+     "rating": 143,
+     "tanking": 18906,
+     "wins": 1
+    },
+    "gambler": {
+     "dealing": 145215,
+     "healing": 39344,
+     "matches": 10,
+     "rating": 705,
+     "tanking": 116534,
+     "wins": 7
+    },
+    "illusionist": {
+     "dealing": 6862,
+     "healing": 2970,
+     "matches": 1,
+     "rating": 75,
+     "tanking": 7586,
+     "wins": 0
+    },
+    "lancer": {
+     "dealing": 88323,
+     "healing": 30141,
+     "matches": 6,
+     "rating": 423,
+     "tanking": 63902,
+     "wins": 5
+    },
+    "pole_warrior": {
+     "dealing": 135350,
+     "healing": 71257,
+     "matches": 10,
+     "rating": 723,
+     "tanking": 119975,
+     "wins": 7
+    },
+    "priest": {
+     "dealing": 11856,
+     "healing": 85705,
+     "matches": 4,
+     "rating": 276,
+     "tanking": 48170,
+     "wins": 1
+    },
+    "pyromancer": {
+     "dealing": 111112,
+     "healing": 21902,
+     "matches": 6,
+     "rating": 431,
+     "tanking": 58442,
+     "wins": 5
+    },
+    "swordman": {
+     "dealing": 25469,
+     "healing": 12050,
+     "matches": 2,
+     "rating": 138,
+     "tanking": 19276,
+     "wins": 1
+    }
+   }
+  },
+  "40": {
+   "champion_detail": {
+    "berserker": {
+     "dealing": 153739,
+     "healing": 75965,
+     "matches": 10,
+     "rating": 730,
+     "tanking": 124074,
+     "wins": 7
+    },
+    "dual_blader": {
+     "dealing": 10865,
+     "healing": 0,
+     "matches": 1,
+     "rating": 76,
+     "tanking": 10489,
+     "wins": 1
+    },
+    "harpy": {
+     "dealing": 9988,
+     "healing": 3698,
+     "matches": 1,
+     "rating": 65,
+     "tanking": 11158,
+     "wins": 0
+    },
+    "siege_breaker": {
+     "dealing": 71591,
+     "healing": 9959,
+     "matches": 2,
+     "rating": 155,
+     "tanking": 21919,
+     "wins": 2
+    },
+    "vampire": {
+     "dealing": 67680,
+     "healing": 52098,
+     "matches": 5,
+     "rating": 364,
+     "tanking": 57559,
+     "wins": 4
+    }
+   }
+  },
+  "41": {
+   "champion_detail": {
+    "fighter": {
+     "dealing": 5186,
+     "healing": 3180,
+     "matches": 1,
+     "rating": 59,
+     "tanking": 7623,
+     "wins": 0
+    },
+    "monk": {
+     "dealing": 27885,
+     "healing": 86593,
+     "matches": 7,
+     "rating": 525,
+     "tanking": 99047,
+     "wins": 5
+    },
+    "shield_bearer": {
+     "dealing": 11752,
+     "healing": 0,
+     "matches": 5,
+     "rating": 355,
+     "tanking": 66637,
+     "wins": 2
+    }
+   }
+  },
+  "42": {
+   "champion_detail": {
+    "berserker": {
+     "dealing": 4285,
+     "healing": 3220,
+     "matches": 1,
+     "rating": 73,
+     "tanking": 2651,
+     "wins": 1
+    },
+    "dual_blader": {
+     "dealing": 10264,
+     "healing": 114,
+     "matches": 1,
+     "rating": 68,
+     "tanking": 13472,
+     "wins": 0
+    },
+    "ghost": {
+     "dealing": 5134,
+     "healing": 1000,
+     "matches": 1,
+     "rating": 69,
+     "tanking": 9473,
+     "wins": 0
+    },
+    "lancer": {
+     "dealing": 12461,
+     "healing": 31,
+     "matches": 2,
+     "rating": 135,
+     "tanking": 19638,
+     "wins": 1
+    },
+    "siege_breaker": {
+     "dealing": 15578,
+     "healing": 5712,
+     "matches": 2,
+     "rating": 151,
+     "tanking": 18829,
+     "wins": 2
+    },
+    "soldier": {
+     "dealing": 29030,
+     "healing": 3979,
+     "matches": 3,
+     "rating": 202,
+     "tanking": 20202,
+     "wins": 1
+    },
+    "vampire": {
+     "dealing": 20318,
+     "healing": 17324,
+     "matches": 2,
+     "rating": 138,
+     "tanking": 14839,
+     "wins": 1
+    }
+   }
+  },
+  "43": {
+   "champion_detail": {
+    "cavalry_knight": {
+     "dealing": 4903,
+     "healing": 2681,
+     "matches": 1,
+     "rating": 65,
+     "tanking": 16850,
+     "wins": 0
+    },
+    "gunner": {
+     "dealing": 3994,
+     "healing": 0,
+     "matches": 1,
+     "rating": 67,
+     "tanking": 9226,
+     "wins": 1
+    },
+    "illusionist": {
+     "dealing": 32835,
+     "healing": 0,
+     "matches": 1,
+     "rating": 73,
+     "tanking": 18962,
+     "wins": 0
+    },
+    "ogre": {
+     "dealing": 24357,
+     "healing": 5858,
+     "matches": 2,
+     "rating": 146,
+     "tanking": 27079,
+     "wins": 1
+    },
+    "siege_breaker": {
+     "dealing": 25279,
+     "healing": 2541,
+     "matches": 2,
+     "rating": 139,
+     "tanking": 21097,
+     "wins": 1
+    },
+    "swordman": {
+     "dealing": 16156,
+     "healing": 1157,
+     "matches": 2,
+     "rating": 132,
+     "tanking": 29177,
+     "wins": 0
+    },
+    "test_mod_lucian": {
+     "dealing": 42478,
+     "healing": 8378,
+     "matches": 1,
+     "rating": 82,
+     "tanking": 12515,
+     "wins": 1
+    },
+    "vampire": {
+     "dealing": 22047,
+     "healing": 15463,
+     "matches": 2,
+     "rating": 139,
+     "tanking": 20240,
+     "wins": 2
+    }
+   }
+  },
+  "44": {
+   "champion_detail": {
+    "jiangshi": {
+     "dealing": 36753,
+     "healing": 24334,
+     "matches": 5,
+     "rating": 363,
+     "tanking": 60469,
+     "wins": 2
+    },
+    "monk": {
+     "dealing": 13709,
+     "healing": 44552,
+     "matches": 6,
+     "rating": 420,
+     "tanking": 51329,
+     "wins": 3
+    },
+    "ogre": {
+     "dealing": 7809,
+     "healing": 350,
+     "matches": 1,
+     "rating": 83,
+     "tanking": 13850,
+     "wins": 1
+    }
+   }
+  },
+  "45": {
+   "champion_detail": {
+    "jiangshi": {
+     "dealing": 16553,
+     "healing": 6815,
+     "matches": 1,
+     "rating": 78,
+     "tanking": 16510,
+     "wins": 0
+    }
+   }
+  },
+  "46": {
+   "champion_detail": {
+    "lancer": {
+     "dealing": 17679,
+     "healing": 714,
+     "matches": 1,
+     "rating": 63,
+     "tanking": 11282,
+     "wins": 0
+    }
+   }
+  },
+  "47": {
+   "champion_detail": {
+    "soldier": {
+     "dealing": 17445,
+     "healing": 792,
+     "matches": 1,
+     "rating": 67,
+     "tanking": 11763,
+     "wins": 0
+    }
+   }
+  },
+  "48": {
+   "champion_detail": {
+    "fighter": {
+     "dealing": 8289,
+     "healing": 85,
+     "matches": 1,
+     "rating": 77,
+     "tanking": 11265,
+     "wins": 0
+    }
+   }
+  },
+  "49": {
+   "champion_detail": {
+    "gambler": {
+     "dealing": 10002,
+     "healing": 3607,
+     "matches": 1,
+     "rating": 66,
+     "tanking": 14454,
+     "wins": 0
+    }
+   }
+  },
+  "5": {
+   "champion_detail": {
+    "amazon": {
+     "dealing": 38575,
+     "healing": 13475,
+     "matches": 4,
+     "rating": 264,
+     "tanking": 45330,
+     "wins": 1
+    },
+    "cavalry_knight": {
+     "dealing": 29795,
+     "healing": 15988,
+     "matches": 2,
+     "rating": 157,
+     "tanking": 36623,
+     "wins": 2
+    },
+    "dual_blader": {
+     "dealing": 45640,
+     "healing": 10371,
+     "matches": 6,
+     "rating": 414,
+     "tanking": 61764,
+     "wins": 1
+    },
+    "executioner": {
+     "dealing": 34192,
+     "healing": 19986,
+     "matches": 2,
+     "rating": 141,
+     "tanking": 34402,
+     "wins": 0
+    },
+    "fighter": {
+     "dealing": 38946,
+     "healing": 23324,
+     "matches": 4,
+     "rating": 292,
+     "tanking": 62141,
+     "wins": 1
+    },
+    "gambler": {
+     "dealing": 31799,
+     "healing": 2199,
+     "matches": 3,
+     "rating": 223,
+     "tanking": 29444,
+     "wins": 2
+    },
+    "gunner": {
+     "dealing": 29529,
+     "healing": 0,
+     "matches": 3,
+     "rating": 216,
+     "tanking": 17000,
+     "wins": 2
+    },
+    "illusionist": {
+     "dealing": 34462,
+     "healing": 0,
+     "matches": 2,
+     "rating": 167,
+     "tanking": 17059,
+     "wins": 2
+    },
+    "jiangshi": {
+     "dealing": 20453,
+     "healing": 13217,
+     "matches": 2,
+     "rating": 147,
+     "tanking": 28022,
+     "wins": 1
+    },
+    "lancer": {
+     "dealing": 35186,
+     "healing": 6849,
+     "matches": 2,
+     "rating": 149,
+     "tanking": 33782,
+     "wins": 0
+    },
+    "pyromancer": {
+     "dealing": 101877,
+     "healing": 0,
+     "matches": 5,
+     "rating": 369,
+     "tanking": 39572,
+     "wins": 4
+    },
+    "soldier": {
+     "dealing": 40432,
+     "healing": 3142,
+     "matches": 2,
+     "rating": 133,
+     "tanking": 27594,
+     "wins": 1
+    },
+    "swordman": {
+     "dealing": 60668,
+     "healing": 19534,
+     "matches": 3,
+     "rating": 191,
+     "tanking": 50701,
+     "wins": 0
+    },
+    "vampire": {
+     "dealing": 135844,
+     "healing": 79783,
+     "matches": 6,
+     "rating": 401,
+     "tanking": 87597,
+     "wins": 2
+    }
+   }
+  },
+  "50": {
+   "champion_detail": {
+    "gunner": {
+     "dealing": 17236,
+     "healing": 189,
+     "matches": 1,
+     "rating": 72,
+     "tanking": 11798,
+     "wins": 1
+    }
+   }
+  },
+  "51": {
+   "champion_detail": {
+    "executioner": {
+     "dealing": 4940,
+     "healing": 1868,
+     "matches": 1,
+     "rating": 80,
+     "tanking": 9604,
+     "wins": 1
+    }
+   }
+  },
+  "52": {
+   "champion_detail": {
+    "swordman": {
+     "dealing": 20344,
+     "healing": 6851,
+     "matches": 1,
+     "rating": 76,
+     "tanking": 14985,
+     "wins": 1
+    }
+   }
+  },
+  "53": {
+   "champion_detail": {
+    "cavalry_knight": {
+     "dealing": 9263,
+     "healing": 11149,
+     "matches": 1,
+     "rating": 84,
+     "tanking": 21123,
+     "wins": 1
+    }
+   }
+  },
+  "54": {
+   "champion_detail": {
+    "archer": {
+     "dealing": 13238,
+     "healing": 1831,
+     "matches": 1,
+     "rating": 77,
+     "tanking": 12458,
+     "wins": 1
+    }
+   }
+  },
+  "55": {
+   "champion_detail": {
+    "gunner": {
+     "dealing": 18705,
+     "healing": 548,
+     "matches": 1,
+     "rating": 76,
+     "tanking": 13120,
+     "wins": 0
+    }
+   }
+  },
+  "56": {
+   "champion_detail": {
+    "archer": {
+     "dealing": 15368,
+     "healing": 4513,
+     "matches": 1,
+     "rating": 70,
+     "tanking": 10693,
+     "wins": 0
+    }
+   }
+  },
+  "57": {
+   "champion_detail": {
+    "pole_warrior": {
+     "dealing": 17766,
+     "healing": 0,
+     "matches": 1,
+     "rating": 68,
+     "tanking": 15726,
+     "wins": 0
+    }
+   }
+  },
+  "58": {
+   "champion_detail": {
+    "lancer": {
+     "dealing": 14208,
+     "healing": 6607,
+     "matches": 1,
+     "rating": 74,
+     "tanking": 15444,
+     "wins": 0
+    }
+   }
+  },
+  "59": {
+   "champion_detail": {
+    "monk": {
+     "dealing": 3393,
+     "healing": 10456,
+     "matches": 1,
+     "rating": 69,
+     "tanking": 22839,
+     "wins": 0
+    }
+   }
+  },
+  "6": {
+   "champion_detail": {
+    "cavalry_knight": {
+     "dealing": 4635,
+     "healing": 0,
+     "matches": 1,
+     "rating": 68,
+     "tanking": 12371,
+     "wins": 0
+    },
+    "fighter": {
+     "dealing": 17176,
+     "healing": 4752,
+     "matches": 3,
+     "rating": 211,
+     "tanking": 36000,
+     "wins": 1
+    },
+    "hammerer": {
+     "dealing": 16041,
+     "healing": 0,
+     "matches": 3,
+     "rating": 229,
+     "tanking": 31237,
+     "wins": 1
+    },
+    "jiangshi": {
+     "dealing": 42527,
+     "healing": 23121,
+     "matches": 5,
+     "rating": 373,
+     "tanking": 50272,
+     "wins": 3
+    },
+    "knight": {
+     "dealing": 9511,
+     "healing": 0,
+     "matches": 3,
+     "rating": 214,
+     "tanking": 48118,
+     "wins": 1
+    },
+    "magic_knight": {
+     "dealing": 35964,
+     "healing": 0,
+     "matches": 4,
+     "rating": 279,
+     "tanking": 56013,
+     "wins": 3
+    },
+    "monk": {
+     "dealing": 21047,
+     "healing": 75775,
+     "matches": 8,
+     "rating": 569,
+     "tanking": 98978,
+     "wins": 3
+    },
+    "ogre": {
+     "dealing": 7224,
+     "healing": 4426,
+     "matches": 1,
+     "rating": 68,
+     "tanking": 23573,
+     "wins": 0
+    },
+    "pole_warrior": {
+     "dealing": 16065,
+     "healing": 0,
+     "matches": 2,
+     "rating": 132,
+     "tanking": 26252,
+     "wins": 0
+    },
+    "priest": {
+     "dealing": 4227,
+     "healing": 20154,
+     "matches": 2,
+     "rating": 135,
+     "tanking": 22774,
+     "wins": 1
+    },
+    "pythoness": {
+     "dealing": 8016,
+     "healing": 22007,
+     "matches": 2,
+     "rating": 140,
+     "tanking": 18585,
+     "wins": 2
+    },
+    "shield_bearer": {
+     "dealing": 19729,
+     "healing": 0,
+     "matches": 8,
+     "rating": 564,
+     "tanking": 156734,
+     "wins": 2
+    },
+    "vampire": {
+     "dealing": 6571,
+     "healing": 9882,
+     "matches": 1,
+     "rating": 66,
+     "tanking": 14701,
+     "wins": 0
+    }
+   }
+  },
+  "60": {
+   "champion_detail": {
+    "jiangshi": {
+     "dealing": 13694,
+     "healing": 8124,
+     "matches": 1,
+     "rating": 82,
+     "tanking": 13052,
+     "wins": 1
+    }
+   }
+  },
+  "61": {
+   "champion_detail": {
+    "gambler": {
+     "dealing": 13478,
+     "healing": 2316,
+     "matches": 1,
+     "rating": 68,
+     "tanking": 12220,
+     "wins": 1
+    }
+   }
+  },
+  "62": {
+   "champion_detail": {
+    "soldier": {
+     "dealing": 18716,
+     "healing": 1335,
+     "matches": 1,
+     "rating": 80,
+     "tanking": 9075,
+     "wins": 1
+    }
+   }
+  },
+  "63": {
+   "champion_detail": {
+    "cavalry_knight": {
+     "dealing": 9674,
+     "healing": 3234,
+     "matches": 1,
+     "rating": 80,
+     "tanking": 22598,
+     "wins": 1
+    }
+   }
+  },
+  "64": {
+   "champion_detail": {
+    "swordman": {
+     "dealing": 22260,
+     "healing": 6635,
+     "matches": 1,
+     "rating": 79,
+     "tanking": 12962,
+     "wins": 1
+    }
+   }
+  },
+  "7": {
+   "champion_detail": {
+    "archer": {
+     "dealing": 16832,
+     "healing": 1093,
+     "matches": 2,
+     "rating": 129,
+     "tanking": 29112,
+     "wins": 0
+    },
+    "cavalry_knight": {
+     "dealing": 7968,
+     "healing": 80,
+     "matches": 1,
+     "rating": 71,
+     "tanking": 15488,
+     "wins": 0
+    },
+    "fighter": {
+     "dealing": 28470,
+     "healing": 18826,
+     "matches": 4,
+     "rating": 290,
+     "tanking": 60356,
+     "wins": 1
+    },
+    "hammerer": {
+     "dealing": 22412,
+     "healing": 0,
+     "matches": 4,
+     "rating": 297,
+     "tanking": 48177,
+     "wins": 2
+    },
+    "illusionist": {
+     "dealing": 47882,
+     "healing": 0,
+     "matches": 4,
+     "rating": 272,
+     "tanking": 53584,
+     "wins": 1
+    },
+    "jiangshi": {
+     "dealing": 63434,
+     "healing": 43280,
+     "matches": 9,
+     "rating": 619,
+     "tanking": 110539,
+     "wins": 2
+    },
+    "knight": {
+     "dealing": 12671,
+     "healing": 708,
+     "matches": 5,
+     "rating": 352,
+     "tanking": 80058,
+     "wins": 2
+    },
+    "monk": {
+     "dealing": 34051,
+     "healing": 144059,
+     "matches": 10,
+     "rating": 716,
+     "tanking": 139614,
+     "wins": 7
+    },
+    "pole_warrior": {
+     "dealing": 12213,
+     "healing": 8778,
+     "matches": 1,
+     "rating": 62,
+     "tanking": 37168,
+     "wins": 0
+    },
+    "pythoness": {
+     "dealing": 18876,
+     "healing": 63450,
+     "matches": 3,
+     "rating": 199,
+     "tanking": 45483,
+     "wins": 1
+    },
+    "shield_bearer": {
+     "dealing": 11873,
+     "healing": 36,
+     "matches": 5,
+     "rating": 356,
+     "tanking": 99217,
+     "wins": 3
+    }
+   }
+  },
+  "8": {
+   "champion_detail": {
+    "archer": {
+     "dealing": 24947,
+     "healing": 2356,
+     "matches": 2,
+     "rating": 125,
+     "tanking": 28562,
+     "wins": 0
+    },
+    "cavalry_knight": {
+     "dealing": 15779,
+     "healing": 969,
+     "matches": 3,
+     "rating": 219,
+     "tanking": 43828,
+     "wins": 1
+    },
+    "fighter": {
+     "dealing": 51122,
+     "healing": 30441,
+     "matches": 8,
+     "rating": 610,
+     "tanking": 97495,
+     "wins": 8
+    },
+    "illusionist": {
+     "dealing": 10349,
+     "healing": 0,
+     "matches": 1,
+     "rating": 68,
+     "tanking": 10793,
+     "wins": 0
+    },
+    "jiangshi": {
+     "dealing": 7358,
+     "healing": 5360,
+     "matches": 1,
+     "rating": 67,
+     "tanking": 9959,
+     "wins": 0
+    },
+    "knight": {
+     "dealing": 17011,
+     "healing": 324,
+     "matches": 5,
+     "rating": 382,
+     "tanking": 78519,
+     "wins": 2
+    },
+    "magic_knight": {
+     "dealing": 10779,
+     "healing": 0,
+     "matches": 2,
+     "rating": 135,
+     "tanking": 17522,
+     "wins": 0
+    },
+    "monk": {
+     "dealing": 14045,
+     "healing": 49027,
+     "matches": 5,
+     "rating": 326,
+     "tanking": 65938,
+     "wins": 0
+    },
+    "ogre": {
+     "dealing": 15987,
+     "healing": 2402,
+     "matches": 1,
+     "rating": 78,
+     "tanking": 12611,
+     "wins": 1
+    },
+    "pole_warrior": {
+     "dealing": 22543,
+     "healing": 5920,
+     "matches": 2,
+     "rating": 132,
+     "tanking": 40861,
+     "wins": 0
+    },
+    "pyromancer": {
+     "dealing": 10527,
+     "healing": 0,
+     "matches": 1,
+     "rating": 64,
+     "tanking": 5973,
+     "wins": 0
+    },
+    "pythoness": {
+     "dealing": 36915,
+     "healing": 151301,
+     "matches": 6,
+     "rating": 396,
+     "tanking": 107387,
+     "wins": 1
+    },
+    "shield_bearer": {
+     "dealing": 20243,
+     "healing": 0,
+     "matches": 9,
+     "rating": 674,
+     "tanking": 128840,
+     "wins": 6
+    }
+   }
+  },
+  "9": {
+   "champion_detail": {
+    "amazon": {
+     "dealing": 119400,
+     "healing": 29758,
+     "matches": 9,
+     "rating": 641,
+     "tanking": 142306,
+     "wins": 5
+    },
+    "archer": {
+     "dealing": 18784,
+     "healing": 2972,
+     "matches": 2,
+     "rating": 126,
+     "tanking": 18969,
+     "wins": 0
+    },
+    "cavalry_knight": {
+     "dealing": 11120,
+     "healing": 6096,
+     "matches": 1,
+     "rating": 78,
+     "tanking": 11742,
+     "wins": 1
+    },
+    "dual_blader": {
+     "dealing": 22056,
+     "healing": 185,
+     "matches": 2,
+     "rating": 151,
+     "tanking": 17526,
+     "wins": 1
+    },
+    "executioner": {
+     "dealing": 11123,
+     "healing": 2767,
+     "matches": 1,
+     "rating": 70,
+     "tanking": 13693,
+     "wins": 0
+    },
+    "fighter": {
+     "dealing": 41110,
+     "healing": 27556,
+     "matches": 4,
+     "rating": 281,
+     "tanking": 63563,
+     "wins": 0
+    },
+    "gambler": {
+     "dealing": 28113,
+     "healing": 1248,
+     "matches": 3,
+     "rating": 199,
+     "tanking": 23573,
+     "wins": 1
+    },
+    "gunner": {
+     "dealing": 205790,
+     "healing": 3376,
+     "matches": 13,
+     "rating": 932,
+     "tanking": 96971,
+     "wins": 10
+    },
+    "illusionist": {
+     "dealing": 10420,
+     "healing": 0,
+     "matches": 1,
+     "rating": 64,
+     "tanking": 8688,
+     "wins": 0
+    },
+    "jiangshi": {
+     "dealing": 10562,
+     "healing": 6235,
+     "matches": 1,
+     "rating": 79,
+     "tanking": 10865,
+     "wins": 1
+    },
+    "lancer": {
+     "dealing": 46455,
+     "healing": 6556,
+     "matches": 3,
+     "rating": 197,
+     "tanking": 28970,
+     "wins": 1
+    },
+    "pyromancer": {
+     "dealing": 15108,
+     "healing": 0,
+     "matches": 1,
+     "rating": 70,
+     "tanking": 7113,
+     "wins": 1
+    },
+    "soldier": {
+     "dealing": 15199,
+     "healing": 1570,
+     "matches": 1,
+     "rating": 62,
+     "tanking": 11077,
+     "wins": 0
+    },
+    "swordman": {
+     "dealing": 55890,
+     "healing": 16165,
+     "matches": 4,
+     "rating": 283,
+     "tanking": 52017,
+     "wins": 2
+    },
+    "vampire": {
+     "dealing": 37023,
+     "healing": 17734,
+     "matches": 2,
+     "rating": 139,
+     "tanking": 23816,
+     "wins": 0
+    }
+   }
+  }
+ }
+}

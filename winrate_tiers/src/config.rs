@@ -8,6 +8,7 @@
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
+use crate::schema::Unrated;
 use crate::tiers::{Mode, Model, Shares, Thresholds};
 
 #[derive(Clone, Debug)]
@@ -23,13 +24,12 @@ pub struct Config {
     pub model: Model,
     pub shares: Shares,
     pub thresholds: Thresholds,
-    /// Weight of solo-rank games relative to competition games. Reserved:
-    /// blending separate stat sources needs the record layout pinned first,
-    /// so nothing reads it yet.
+    /// Weight of solo-rank games relative to competition games.
     pub solo_weight: f64,
-    /// Max blend weight of the previous patch (0 = current patch only).
-    /// Reserved on the same grounds as `solo_weight`.
-    pub prev_weight: f64,
+    /// Explicit path to the tier field, bypassing the search. Empty = search.
+    pub tier_path: String,
+    /// What to do with champions the stats cannot rate.
+    pub unrated: Unrated,
     /// Minimum management ticks between recomputes.
     pub recompute_interval: u64,
     /// Write the schema dump and the tier table next to the mod.
@@ -47,7 +47,8 @@ impl Default for Config {
             shares: Shares::default(),
             thresholds: Thresholds::default(),
             solo_weight: 0.5,
-            prev_weight: 0.8,
+            tier_path: String::new(),
+            unrated: Unrated::Keep,
             recompute_interval: 4,
             dump: true,
         }
@@ -141,7 +142,14 @@ pub fn parse(text: &str) -> Config {
             "tier_b" => set_f64(&mut config.thresholds.b, value),
             "tier_c" => set_f64(&mut config.thresholds.c, value),
             "solo_weight" => set_f64(&mut config.solo_weight, value),
-            "prev_weight" => set_f64(&mut config.prev_weight, value),
+            "tier_path" => config.tier_path = value.to_string(),
+            "unrated" => {
+                config.unrated = match value.to_ascii_lowercase().as_str() {
+                    "omit" => Unrated::Omit,
+                    "keep" => Unrated::Keep,
+                    _ => config.unrated,
+                }
+            }
             "recompute_interval" => {
                 if let Ok(parsed) = value.parse::<u64>() {
                     config.recompute_interval = parsed.max(1);
@@ -228,18 +236,31 @@ tier_c=0.478
 # prior        : prior strength, in virtual games played at `neutral`.
 # confidence_k : higher = stronger shrink for low samples.
 # min_matches  : below this many effective games a champion gets No Tier.
-#
-# solo_weight and prev_weight are RESERVED and currently do nothing. Blending
-# separate stat sources (solo rank vs competition, this patch vs the previous
-# one) needs the record layout pinned first - see "Schema" in the README.
-# solo_weight  : weight of solo-rank games. effective = competition + w * solo.
-# prev_weight  : max blend weight of the previous patch (0 = ignore it).
+# solo_weight  : weight of solo-rank games against competition games.
+#                effective games = competition + solo_weight * solo.
+#                0 = competition only.
 neutral=0.5
 prior=10
 confidence_k=50
 min_matches=5
 solo_weight=0.5
-prev_weight=0.8
+
+# ---------------------------------------------------------------------------
+# Where the tier list is written
+# ---------------------------------------------------------------------------
+# tier_path : dot path to the tier field inside the team document. Leave empty
+#             to search for it. On a current save the field is:
+#                 champion_tiers = { "amazon": "B", "archer": "C", ... }
+#             held per team, which is what lets this mod write yours without
+#             touching the rest of the league.
+tier_path=
+
+# unrated : what to do with a champion that has fewer than min_matches games.
+#   keep = leave whatever tier the save already has (default). The live schema
+#          has no "no tier" value - every champion carries one of S/A/B/C/D -
+#          so keeping one is the option that stays in a shape the game accepts.
+#   omit = drop the champion from the list entirely.
+unrated=keep
 
 # ---------------------------------------------------------------------------
 # Housekeeping
