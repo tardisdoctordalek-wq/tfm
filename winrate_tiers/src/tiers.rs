@@ -55,6 +55,13 @@ pub struct ChampionRecord {
     pub matches: f64,
     /// Effective wins on the same scale as `matches`.
     pub wins: f64,
+    /// Share of competition games in which the champion was picked or banned,
+    /// 0..1. Win rate alone rewards a champion nobody contests: a thin sample
+    /// taken only in favourable drafts reads as strength. Presence is what
+    /// separates that from a champion the league actually fights over, and
+    /// counting bans keeps a champion that is strong enough to be banned out
+    /// from being punished for a low pick count.
+    pub presence: f64,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -67,11 +74,20 @@ pub struct Model {
     pub confidence_k: f64,
     /// Champions under this many effective games get no tier at all.
     pub min_matches: f64,
+    /// Champions contested in a smaller share of competition games than this
+    /// get no tier either, however good their win rate looks.
+    pub min_presence: f64,
 }
 
 impl Default for Model {
     fn default() -> Self {
-        Self { neutral: 0.5, prior: 10.0, confidence_k: 50.0, min_matches: 5.0 }
+        Self {
+            neutral: 0.5,
+            prior: 10.0,
+            confidence_k: 50.0,
+            min_matches: 5.0,
+            min_presence: 0.05,
+        }
     }
 }
 
@@ -135,6 +151,7 @@ pub struct Assignment {
     pub tier: Tier,
     pub metric: f64,
     pub matches: f64,
+    pub presence: f64,
 }
 
 /// Classifies the whole roster. Output is sorted by metric descending, then
@@ -154,6 +171,7 @@ pub fn classify(
             tier: Tier::None,
             metric: model.metric(record),
             matches: record.matches,
+            presence: record.presence,
         })
         .collect();
 
@@ -165,10 +183,13 @@ pub fn classify(
             .then(left.champion_id.cmp(&right.champion_id))
     });
 
-    // Thin-sample champions are ranked but never tiered, and they must not
-    // consume percentile budget either — so split them out first.
-    let (rated, unrated): (Vec<_>, Vec<_>) =
-        scored.into_iter().partition(|entry| entry.matches >= model.min_matches);
+    // Thin-sample and uncontested champions are ranked but never tiered, and
+    // they must not consume percentile budget either — so split them out
+    // first. Both gates are needed: `min_matches` catches too little data,
+    // `min_presence` catches data the league does not back up.
+    let (rated, unrated): (Vec<_>, Vec<_>) = scored.into_iter().partition(|entry| {
+        entry.matches >= model.min_matches && entry.presence >= model.min_presence
+    });
 
     let mut rated = rated;
     match mode {
@@ -264,6 +285,9 @@ mod tests {
             key: format!("champ{id}"),
             matches,
             wins: matches * win_rate,
+            // Contested enough to pass the presence gate unless a test says
+            // otherwise.
+            presence: 0.5,
         }
     }
 
@@ -300,6 +324,69 @@ mod tests {
         assert_eq!(count(Tier::B), 30);
         assert_eq!(count(Tier::C), 25);
         assert_eq!(count(Tier::D), 15);
+    }
+
+    #[test]
+    fn an_uncontested_champion_gets_no_tier_however_good_it_looks() {
+        // The reported case: a champion the league never picks or bans, whose
+        // win rate would otherwise put it at the top.
+        let mut records = clustered_roster();
+        records.push(ChampionRecord {
+            champion_id: 900,
+            key: "ogre".into(),
+            matches: 2431.0,
+            wins: 1420.0,
+            presence: 0.004,
+        });
+        let assignments = classify(
+            &records,
+            &Model::default(),
+            Mode::Percentile,
+            &Shares::default(),
+            &Thresholds::default(),
+        );
+        let ogre = assignments.iter().find(|entry| entry.key == "ogre").unwrap();
+        assert_eq!(ogre.tier, Tier::None, "an uncontested champion reached {}", ogre.tier);
+        // And it did not eat an S slot on the way past.
+        assert_eq!(assignments.iter().filter(|entry| entry.tier == Tier::S).count(), 10);
+    }
+
+    #[test]
+    fn a_champion_that_is_banned_rather_than_picked_still_rates() {
+        // Presence counts bans, so a champion strong enough to be banned out
+        // is not punished for the low pick count that causes.
+        let mut records = clustered_roster();
+        records.push(ChampionRecord {
+            champion_id: 901,
+            key: "banned_out".into(),
+            matches: 30.0,
+            wins: 21.0,
+            presence: 0.40,
+        });
+        let assignments = classify(
+            &records,
+            &Model::default(),
+            Mode::Percentile,
+            &Shares::default(),
+            &Thresholds::default(),
+        );
+        let entry = assignments.iter().find(|entry| entry.key == "banned_out").unwrap();
+        assert_ne!(entry.tier, Tier::None);
+    }
+
+    #[test]
+    fn the_presence_gate_can_be_switched_off() {
+        let model = Model { min_presence: 0.0, ..Model::default() };
+        let records = vec![ChampionRecord {
+            champion_id: 1,
+            key: "ogre".into(),
+            matches: 500.0,
+            wins: 300.0,
+            presence: 0.0,
+        }];
+        let assignments =
+            classify(&records, &model, Mode::Percentile, &Shares::default(), &Thresholds::default());
+        assert_ne!(assignments[0].tier, Tier::None);
     }
 
     #[test]

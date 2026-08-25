@@ -353,12 +353,13 @@ fn render_table(
     );
     let _ = writeln!(
         out,
-        "# mode: {:?}   neutral={} prior={} confidence_k={} min_matches={}",
+        "# mode: {:?}   neutral={} prior={} confidence_k={} min_matches={} min_presence={}",
         config.mode,
         config.model.neutral,
         config.model.prior,
         config.model.confidence_k,
-        config.model.min_matches
+        config.model.min_matches,
+        config.model.min_presence
     );
     let counts = tiers::histogram(assignments)
         .iter()
@@ -366,15 +367,20 @@ fn render_table(
         .collect::<Vec<_>>()
         .join("  ");
     let _ = writeln!(out, "# distribution: {counts}\n");
-    let _ = writeln!(out, "{:<4} {:<28} {:>8} {:>10}", "tier", "champion", "games", "metric");
+    let _ = writeln!(
+        out,
+        "{:<4} {:<28} {:>8} {:>10} {:>9}",
+        "tier", "champion", "games", "metric", "presence"
+    );
     for entry in assignments {
         let _ = writeln!(
             out,
-            "{:<4} {:<28} {:>8.1} {:>10.4}",
+            "{:<4} {:<28} {:>8.1} {:>10.4} {:>8.1}%",
             entry.tier.label(),
             entry.key,
             entry.matches,
-            entry.metric
+            entry.metric,
+            entry.presence * 100.0
         );
     }
     out
@@ -386,7 +392,7 @@ mod tests {
     use crate::tiers::{Assignment, Tier};
 
     fn assignment(key: &str, tier: Tier) -> Assignment {
-        Assignment { champion_id: 0, key: key.into(), tier, metric: 0.5, matches: 9.0 }
+        Assignment { champion_id: 0, key: key.into(), tier, metric: 0.5, matches: 9.0, presence: 0.1 }
     }
 
     #[test]

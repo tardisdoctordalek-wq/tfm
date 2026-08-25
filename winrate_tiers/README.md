@@ -31,6 +31,20 @@ Champions under `min_matches` effective games get no tier and do not consume
 percentile budget — excluding them from the tiers but not from the budget
 would let champions with no record take up the S slots.
 
+A champion also has to be **contested**:
+
+```
+presence = (competition picks + competition bans) / games in the patch window
+```
+
+Win rate alone rewards a champion nobody drafts — a thin sample taken only in
+favourable drafts reads as strength, which is how a champion the league never
+touches ends up S tier. Counting bans matters: pick rate alone would punish a
+champion strong enough to be banned out. A game seats 10 picks and 4 bans
+across ~57 champions, so an evenly-drafted champion sits near 24%; the
+`min_presence` default of 0.05 means "at least a fifth as contested as an
+average champion". Solo-rank games never count toward it.
+
 `mode=threshold` restores absolute cut-offs if you prefer them.
 
 **The list goes to your team only.** `apply_to_ai_teams` defaults to `false`.

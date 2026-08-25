@@ -280,7 +280,7 @@ mod tests {
     }
 
     fn assignment(key: &str, tier: Tier) -> Assignment {
-        Assignment { champion_id: 0, key: key.into(), tier, metric: 0.5, matches: 10.0 }
+        Assignment { champion_id: 0, key: key.into(), tier, metric: 0.5, matches: 10.0, presence: 0.1 }
     }
 
     #[test]

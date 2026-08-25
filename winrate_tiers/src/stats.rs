@@ -97,7 +97,12 @@ impl Split {
 /// This is the blend the original `draft_winrate_penalty` mod documented, and
 /// the reason it needs no threshold: the fade is computed per champion from
 /// that champion's own coverage.
-fn blend(competition: &Split, solo: &Split, params: &Params) -> BTreeMap<String, Totals> {
+fn blend(
+    competition: &Split,
+    solo: &Split,
+    contest: &Contest,
+    params: &Params,
+) -> BTreeMap<String, (Totals, f64)> {
     let weight = params.solo_weight.max(0.0);
     let mut blended = BTreeMap::new();
     let champions: BTreeSet<&String> = competition.champions().chain(solo.champions()).collect();
@@ -114,10 +119,51 @@ fn blend(competition: &Split, solo: &Split, params: &Params) -> BTreeMap<String,
         );
         let effective = current.plus(previous.scaled(fade));
         if effective.matches > 0.0 {
-            blended.insert(champion.clone(), effective);
+            let presence = contest.presence(champion, comp_current.matches, comp_previous.matches, fade);
+            blended.insert(champion.clone(), (effective, presence));
         }
     }
     blended
+}
+
+/// Bans and game counts for the two patches in force — the denominator and
+/// the ban half of presence.
+#[derive(Default)]
+struct Contest {
+    current_bans: BTreeMap<String, f64>,
+    previous_bans: BTreeMap<String, f64>,
+    current_games: f64,
+    previous_games: f64,
+}
+
+impl Contest {
+    /// Share of competition games in which the champion was picked or banned,
+    /// blending the two patches on the same fade as the win rate.
+    fn presence(&self, champion: &str, picks_current: f64, picks_previous: f64, fade: f64) -> f64 {
+        let games = self.current_games + self.previous_games * fade;
+        if games <= 0.0 {
+            // With no games to measure against, presence cannot rule anything
+            // out - report full presence rather than gating every champion.
+            return 1.0;
+        }
+        let bans = self.current_bans.get(champion).copied().unwrap_or(0.0)
+            + self.previous_bans.get(champion).copied().unwrap_or(0.0) * fade;
+        let picks = picks_current + picks_previous * fade;
+        // Ten champions are picked per game, so picks are divided by the
+        // games they were drawn from, not by picks overall.
+        ((picks + bans) / games).min(1.0)
+    }
+}
+
+fn bucket_of(
+    buckets: &BTreeMap<String, BTreeMap<String, f64>>,
+    version: &Option<String>,
+) -> BTreeMap<String, f64> {
+    version.as_ref().and_then(|version| buckets.get(version)).cloned().unwrap_or_default()
+}
+
+fn count_of(counts: &BTreeMap<String, f64>, version: &Option<String>) -> f64 {
+    version.as_ref().and_then(|version| counts.get(version)).copied().unwrap_or(0.0)
 }
 
 /// Picks the current and previous patch buckets out of a versioned source.
@@ -153,6 +199,11 @@ pub struct Collector {
     finished: BTreeMap<(u32, usize), BTreeMap<String, Totals>>,
     /// Competition games from replays, bucketed by balance patch.
     replay: BTreeMap<String, BTreeMap<String, Totals>>,
+    /// Bans per champion per patch. A champion banned out of a draft is being
+    /// respected, not ignored, so bans count toward presence alongside picks.
+    bans: BTreeMap<String, BTreeMap<String, f64>>,
+    /// Games read per patch — the denominator presence is measured against.
+    games: BTreeMap<String, f64>,
     counted_replays: BTreeSet<usize>,
     /// Solo-rank games, bucketed the same way.
     solo: BTreeMap<String, BTreeMap<String, Totals>>,
@@ -233,7 +284,21 @@ impl Collector {
         };
         summary.patches = patches.describe();
 
-        let blended = blend(&competition, &solo, params);
+        let contest = match params.source {
+            Source::Replay => Contest {
+                current_bans: bucket_of(&self.bans, &patches.current),
+                previous_bans: bucket_of(&self.bans, &patches.previous),
+                current_games: count_of(&self.games, &patches.current),
+                previous_games: count_of(&self.games, &patches.previous),
+            },
+            // The aggregates carry no bans and no game count; every game
+            // seats ten champions, so the count is recoverable from the picks.
+            Source::Summary => Contest {
+                current_games: competition.current.values().map(|t| t.matches).sum::<f64>() / 10.0,
+                ..Contest::default()
+            },
+        };
+        let blended = blend(&competition, &solo, &contest, params);
 
         summary.competition_matches = competition.current.values().map(|t| t.matches).sum();
         summary.previous_matches = competition.previous.values().map(|t| t.matches).sum();
@@ -243,11 +308,12 @@ impl Collector {
         let records = blended
             .into_iter()
             .enumerate()
-            .map(|(index, (key, totals))| ChampionRecord {
+            .map(|(index, (key, (totals, presence)))| ChampionRecord {
                 champion_id: index,
                 key,
                 matches: totals.matches,
                 wins: totals.wins,
+                presence,
             })
             .collect();
         (records, summary)
@@ -317,6 +383,13 @@ impl Collector {
             }
 
             let Some(game) = read_game(ctx, kind, id, which) else { continue };
+            if which == Scan::Replay {
+                *self.games.entry(game.version.clone()).or_default() += 1.0;
+                let banned = self.bans.entry(game.version.clone()).or_default();
+                for champion in game.bans {
+                    *banned.entry(champion).or_default() += 1.0;
+                }
+            }
             let bucket = match which {
                 Scan::Replay => &mut self.replay,
                 Scan::Solo => &mut self.solo,
@@ -342,6 +415,7 @@ enum Scan {
 struct Game {
     version: String,
     picks: Vec<(String, bool)>,
+    bans: Vec<String>,
 }
 
 /// Reads one match document: which patch, and which champion was on the
@@ -377,7 +451,21 @@ fn read_game(
             picks.push((champion, won));
         }
     }
-    (!picks.is_empty()).then_some(Game { version, picks })
+
+    // Solo-rank documents have no ban phase; competition replays do.
+    let mut bans = Vec::new();
+    for side in ["blue_ban", "red_ban"] {
+        for slot in 0..MAX_TEAM_SLOTS {
+            let Some(champion) = scalar(&format!("{side}.{slot}"))
+                .and_then(|value| value.as_str().map(str::to_string))
+            else {
+                break;
+            };
+            bans.push(champion);
+        }
+    }
+
+    (!picks.is_empty()).then_some(Game { version, picks, bans })
 }
 
 fn merge(into: &mut BTreeMap<String, Totals>, from: &BTreeMap<String, Totals>) {
@@ -424,6 +512,19 @@ mod tests {
         }
     }
 
+    /// Enough games that presence never gates a blend test; the presence
+    /// gate has its own tests in `tiers`.
+    fn open_contest() -> Contest {
+        Contest { current_games: 0.0, ..Contest::default() }
+    }
+
+    fn totals_of(
+        blended: &BTreeMap<String, (Totals, f64)>,
+        champion: &str,
+    ) -> Totals {
+        blended.get(champion).expect("champion present").0
+    }
+
     fn split(current: &[(&str, f64, f64)], previous: &[(&str, f64, f64)]) -> Split {
         let table = |rows: &[(&str, f64, f64)]| {
             rows.iter()
@@ -435,11 +536,64 @@ mod tests {
         Split { current: table(current), previous: table(previous) }
     }
 
+    fn contest(bans: &[(&str, f64)], games: f64) -> Contest {
+        Contest {
+            current_bans: bans.iter().map(|(k, v)| ((*k).to_string(), *v)).collect(),
+            current_games: games,
+            ..Contest::default()
+        }
+    }
+
+    #[test]
+    fn presence_is_the_share_of_games_a_champion_is_picked_or_banned_in() {
+        let contest = contest(&[("ogre", 20.0)], 1000.0);
+        // 100 picks + 20 bans out of 1000 games.
+        assert!((contest.presence("ogre", 100.0, 0.0, 0.0) - 0.12).abs() < 1e-9);
+        // Never touched at all.
+        assert_eq!(contest.presence("ghost", 0.0, 0.0, 0.0), 0.0);
+    }
+
+    #[test]
+    fn a_champion_banned_every_game_reads_as_fully_contested() {
+        let contest = contest(&[("ogre", 1000.0)], 1000.0);
+        // Banned out, so almost never picked - presence must still be high.
+        assert_eq!(contest.presence("ogre", 0.0, 0.0, 0.0), 1.0);
+    }
+
+    #[test]
+    fn presence_blends_the_previous_patch_on_the_same_fade() {
+        let contest = Contest {
+            current_bans: [("ogre".to_string(), 0.0)].into(),
+            previous_bans: [("ogre".to_string(), 100.0)].into(),
+            current_games: 100.0,
+            previous_games: 100.0,
+        };
+        // Half-faded previous patch: (0 + 0*.5 picks + 0 + 100*.5 bans) / 150.
+        let presence = contest.presence("ogre", 0.0, 0.0, 0.5);
+        assert!((presence - (50.0 / 150.0)).abs() < 1e-9, "got {presence}");
+    }
+
+    #[test]
+    fn with_no_games_to_measure_against_presence_gates_nothing() {
+        // A save whose replays have not been scanned yet must not have every
+        // champion struck off for zero presence.
+        assert_eq!(Contest::default().presence("ogre", 0.0, 0.0, 0.0), 1.0);
+    }
+
+    #[test]
+    fn a_champion_new_to_the_data_appears_on_its_first_games() {
+        // Roster growth needs no configuration: champions come from whatever
+        // the match records name.
+        let competition = split(&[("brand_new", 40.0, 24.0)], &[]);
+        let blended = blend(&competition, &Split::default(), &open_contest(), &params(0.8, 0.5));
+        assert!(blended.contains_key("brand_new"));
+    }
+
     #[test]
     fn a_well_covered_champion_barely_uses_the_previous_patch() {
         let competition = split(&[("ogre", 800.0, 480.0)], &[("ogre", 400.0, 100.0)]);
-        let blended = blend(&competition, &Split::default(), &params(0.8, 0.0));
-        let ogre = blended["ogre"];
+        let blended = blend(&competition, &Split::default(), &open_contest(), &params(0.8, 0.0));
+        let ogre = totals_of(&blended, "ogre");
         // The old 25% record must not drag a 60% current record down much.
         assert!(ogre.wins / ogre.matches > 0.57, "win rate came out {}", ogre.wins / ogre.matches);
         assert!(ogre.matches < 830.0, "previous patch contributed {} games", ogre.matches - 800.0);
@@ -448,8 +602,8 @@ mod tests {
     #[test]
     fn a_champion_with_no_games_this_patch_leans_on_the_last_one() {
         let competition = split(&[("ogre", 1.0, 1.0)], &[("ogre", 400.0, 100.0)]);
-        let blended = blend(&competition, &Split::default(), &params(0.8, 0.0));
-        let ogre = blended["ogre"];
+        let blended = blend(&competition, &Split::default(), &open_contest(), &params(0.8, 0.0));
+        let ogre = totals_of(&blended, "ogre");
         assert!(ogre.matches > 250.0, "previous patch only gave {} games", ogre.matches);
         // And it inherits roughly the old rate rather than the single game.
         assert!(ogre.wins / ogre.matches < 0.35);
@@ -475,23 +629,23 @@ mod tests {
     #[test]
     fn a_hard_cut_drops_the_previous_patch_outright() {
         let competition = split(&[("ogre", 4.0, 4.0)], &[("ogre", 900.0, 200.0)]);
-        let blended = blend(&competition, &Split::default(), &params(0.0, 0.0));
-        assert_eq!(blended["ogre"], Totals { matches: 4.0, wins: 4.0 });
+        let blended = blend(&competition, &Split::default(), &open_contest(), &params(0.0, 0.0));
+        assert_eq!(totals_of(&blended, "ogre"), Totals { matches: 4.0, wins: 4.0 });
     }
 
     #[test]
     fn solo_games_join_at_their_configured_weight() {
         let competition = split(&[("ogre", 100.0, 50.0)], &[]);
         let solo = split(&[("ogre", 40.0, 40.0)], &[]);
-        let blended = blend(&competition, &solo, &params(0.8, 0.5));
-        assert_eq!(blended["ogre"], Totals { matches: 120.0, wins: 70.0 });
+        let blended = blend(&competition, &solo, &open_contest(), &params(0.8, 0.5));
+        assert_eq!(totals_of(&blended, "ogre"), Totals { matches: 120.0, wins: 70.0 });
     }
 
     #[test]
     fn a_champion_seen_only_in_solo_still_appears() {
         let solo = split(&[("chef", 20.0, 12.0)], &[]);
-        let blended = blend(&Split::default(), &solo, &params(0.8, 0.5));
-        assert_eq!(blended["chef"], Totals { matches: 10.0, wins: 6.0 });
+        let blended = blend(&Split::default(), &solo, &open_contest(), &params(0.8, 0.5));
+        assert_eq!(totals_of(&blended, "chef"), Totals { matches: 10.0, wins: 6.0 });
     }
 
     #[test]

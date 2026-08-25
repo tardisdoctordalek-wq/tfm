@@ -28,6 +28,9 @@ fn competition_records() -> Vec<ChampionRecord> {
             key,
             matches: totals.matches,
             wins: totals.wins,
+            // The fixture is one competition's champion_detail, which carries
+            // no ban data; presence is exercised by the unit tests instead.
+            presence: 1.0,
         })
         .collect()
 }

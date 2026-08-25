@@ -144,6 +144,7 @@ pub fn parse(text: &str) -> Config {
             "prior" => set_f64(&mut config.model.prior, value),
             "confidence_k" => set_f64(&mut config.model.confidence_k, value),
             "min_matches" => set_f64(&mut config.model.min_matches, value),
+            "min_presence" => set_f64(&mut config.model.min_presence, value),
             "share_s" => set_f64(&mut config.shares.s, value),
             "share_a" => set_f64(&mut config.shares.a, value),
             "share_b" => set_f64(&mut config.shares.b, value),
@@ -260,6 +261,19 @@ tier_c=0.478
 # prior        : prior strength, in virtual games played at `neutral`.
 # confidence_k : higher = stronger shrink for low samples.
 # min_matches  : below this many effective games a champion gets No Tier.
+# min_presence : share of competition games in which a champion must be picked
+#                OR BANNED to be tiered at all. 0.05 = contested in 5% of games.
+#                For scale: a game seats 10 picks and 4 bans across ~57
+#                champions, so a champion drafted at random would sit near 24%.
+#                0.05 therefore means "at least a fifth as contested as an
+#                average champion" - raise it to demand real meta presence.
+#                Win rate alone rewards a champion nobody contests - a thin
+#                sample taken only in favourable drafts reads as strength, which
+#                is how a champion the league never picks ends up S tier. Bans
+#                count, so a champion strong enough to be banned out is not
+#                punished for the low pick count that causes.
+#                0 disables the gate. Solo-rank games never count toward it:
+#                the point is what the competition scene actually contests.
 # solo_weight  : weight of solo-rank games against competition games.
 #                effective games = competition + solo_weight * solo.
 #                0 = competition only.
@@ -267,6 +281,7 @@ neutral=0.5
 prior=10
 confidence_k=50
 min_matches=5
+min_presence=0.05
 solo_weight=0.5
 
 # ---------------------------------------------------------------------------
