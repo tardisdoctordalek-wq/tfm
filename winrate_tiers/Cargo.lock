@@ -8,7 +8,7 @@ version = "0.1.0"
 
 [[package]]
 name = "winrate_tiers"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "mod-api-stable",
 ]

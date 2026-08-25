@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
 use crate::schema::Unrated;
+use crate::stats::Source;
 use crate::tiers::{Mode, Model, Shares, Thresholds};
 
 #[derive(Clone, Debug)]
@@ -26,6 +27,13 @@ pub struct Config {
     pub thresholds: Thresholds,
     /// Weight of solo-rank games relative to competition games.
     pub solo_weight: f64,
+    /// Where competition win rates come from.
+    pub source: Source,
+    /// Maximum weight the previous balance patch can carry; faded per
+    /// champion by how well the current patch is covered.
+    pub prev_weight: f64,
+    /// Match records read per pass while the first scan catches up.
+    pub scan_budget: usize,
     /// Explicit path to the tier field, bypassing the search. Empty = search.
     pub tier_path: String,
     /// What to do with champions the stats cannot rate.
@@ -47,6 +55,9 @@ impl Default for Config {
             shares: Shares::default(),
             thresholds: Thresholds::default(),
             solo_weight: 0.5,
+            source: Source::Replay,
+            prev_weight: 0.8,
+            scan_budget: 1000,
             tier_path: String::new(),
             unrated: Unrated::Keep,
             recompute_interval: 4,
@@ -142,6 +153,19 @@ pub fn parse(text: &str) -> Config {
             "tier_b" => set_f64(&mut config.thresholds.b, value),
             "tier_c" => set_f64(&mut config.thresholds.c, value),
             "solo_weight" => set_f64(&mut config.solo_weight, value),
+            "prev_weight" => set_f64(&mut config.prev_weight, value),
+            "source" => {
+                config.source = match value.to_ascii_lowercase().as_str() {
+                    "replay" => Source::Replay,
+                    "summary" => Source::Summary,
+                    _ => config.source,
+                }
+            }
+            "scan_budget" => {
+                if let Ok(parsed) = value.parse::<usize>() {
+                    config.scan_budget = parsed;
+                }
+            }
             "tier_path" => config.tier_path = value.to_string(),
             "unrated" => {
                 config.unrated = match value.to_ascii_lowercase().as_str() {
@@ -244,6 +268,44 @@ prior=10
 confidence_k=50
 min_matches=5
 solo_weight=0.5
+
+# ---------------------------------------------------------------------------
+# Balance patches
+# ---------------------------------------------------------------------------
+# Match records carry a `version` string naming the balance patch they were
+# played under. Only the newest two patches are ever counted; anything older
+# is ignored outright, so a long career does not drag years-old balance into
+# today's tier list.
+#
+#   effective m,w = current patch + pf * previous patch
+#   pf = (1 - conf(current games)) * prev_weight * conf(previous games)
+#
+# The (1 - conf(current)) term is the point: the previous patch only fills the
+# gap the current one has not covered yet, and fades out on its own as games
+# accumulate. It is computed PER CHAMPION, so a champion picked a lot this
+# patch stops leaning on old data long before a rarely-picked one does.
+#
+# prev_weight : the most the previous patch can ever be worth.
+#               0.8 (default) settles into "latest patch only" once the patch
+#               has been played, without the tier list turning to noise in the
+#               days right after it lands.
+#               0   = a hard cut: current patch only, from the first game.
+prev_weight=0.8
+
+# source : where competition win rates come from.
+#   replay  (default) - one record per game, carrying the balance patch. This
+#           is the only source that can split competition history by patch, so
+#           prev_weight does nothing without it. Costs one scan of the replay
+#           table on first use, spread over several ticks.
+#   summary - the champion_detail aggregates on the competition records.
+#           Cheap and instant, but they carry NO patch information, so every
+#           game counts equally no matter how old.
+source=replay
+
+# scan_budget : match records read per pass while the first scan catches up.
+#               Lower if the game stutters on a new save, 0 to lift the limit
+#               and take the whole scan in one tick.
+scan_budget=1000
 
 # ---------------------------------------------------------------------------
 # Where the tier list is written

@@ -131,11 +131,30 @@ valid, which is what makes `unrated=omit` safe.
 > all three directions, and a failure lists every tier-ish key with the reason
 > it was refused rather than costing another round trip.
 
-**Not implemented: per-patch weighting.** The `version` field that identifies
-a balance patch exists only on `SoloRankMatch` and `MatchReplay`, not on the
-competition aggregates, so competition stats cannot be split by patch from
-these records. There is deliberately no `prev_weight` setting rather than one
-that quietly does nothing.
+**Per-patch weighting.** The competition aggregates carry no patch
+information, but `MatchReplay` does — one record per game of a competition
+match, each with a `version`. So `source=replay` is the default, and it
+*replaces* the aggregate rather than adding to it; counting both would count
+every game twice.
+
+Only the newest two patches count. The previous one is blended in with the
+formula the original `draft_winrate_penalty` documented:
+
+```
+effective m,w = current patch + pf * previous patch
+pf = (1 - conf(current games)) * prev_weight * conf(previous games)
+```
+
+The `(1 - conf(current))` term does the work: the previous patch fills only
+the gap the current one has not covered, and fades out on its own as games
+accumulate — per champion, so a heavily-picked champion drops old data long
+before a rare one does. No threshold to tune, no cliff. `prev_weight=0` is a
+hard cut to the current patch; `source=summary` returns to the cheap
+aggregates, where patch weighting cannot apply at all.
+
+The first replay scan is spread over passes of `scan_budget` records so no
+management tick is held for the whole table; tiers are written from what has
+been read and sharpen as the rest arrives.
 
 ## Verification
 

@@ -1,6 +1,6 @@
 [package]
 name = "winrate_tiers"
-version = "0.2.2"
+version = "0.3.0"
 edition = "2021"
 
 # Stable-ABI mod. Only the repr(C) contract crosses the DLL boundary, so any

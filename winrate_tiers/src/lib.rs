@@ -26,6 +26,7 @@ pub mod config;
 pub mod json;
 pub mod log;
 pub mod modpath;
+pub mod patch;
 pub mod probe;
 pub mod schema;
 pub mod stats;
@@ -154,7 +155,23 @@ impl StableServerExtension for TierExtension {
 
 impl TierExtension {
     fn recompute(&self, ctx: &mut StableServerCtx<'_>, state: &mut State, config: &config::Config) {
-        let (records, summary) = state.stats.collect(ctx, config.solo_weight);
+        let params = stats::Params {
+            source: config.source,
+            solo_weight: config.solo_weight,
+            prev_weight: config.prev_weight,
+            confidence_k: config.model.confidence_k,
+            budget: config.scan_budget,
+        };
+        let (records, summary) = state.stats.collect(ctx, &params);
+        if summary.remaining > 0 {
+            // The replay table is scanned over several passes so a management
+            // tick is never held for the whole thing. Tiers are written from
+            // what is read so far and sharpen as the rest arrives.
+            log::line(&format!(
+                "scanning match history: +{} this pass, {} still to read",
+                summary.new_records, summary.remaining
+            ));
+        }
         if records.is_empty() {
             log::line(
                 "no champion win/loss data found - a fresh save has none until \
@@ -274,11 +291,12 @@ impl TierExtension {
             .join(" ");
         log::line(&format!(
             "wrote {} champions to '{sink_path}' on {written} team(s) [{counts}] \
-             (competition {:.0} games, solo {:.0}, +{} new solo records)",
+             (patch {}, competition {:.0} games, prev {:.0}, solo {:.0})",
             summary.champions,
+            summary.patches,
             summary.competition_matches,
-            summary.solo_matches,
-            summary.new_solo_records
+            summary.previous_matches,
+            summary.solo_matches
         ));
 
         if config.dump {
@@ -321,8 +339,17 @@ fn render_table(
     let _ = writeln!(out, "# {MOD_ID} - champion tier table");
     let _ = writeln!(
         out,
-        "# games: competition {:.0}, solo {:.0} (weighted x{})",
-        summary.competition_matches, summary.solo_matches, config.solo_weight
+        "# patch: {}   prev_weight={} (faded per champion)",
+        if summary.patches.is_empty() { "not tracked (source=summary)" } else { &summary.patches },
+        config.prev_weight
+    );
+    let _ = writeln!(
+        out,
+        "# games: current patch {:.0}, previous {:.0}, solo {:.0} (weighted x{})",
+        summary.competition_matches,
+        summary.previous_matches,
+        summary.solo_matches,
+        config.solo_weight
     );
     let _ = writeln!(
         out,

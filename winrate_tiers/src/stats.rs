@@ -10,6 +10,12 @@
 //!   count. Records also carry `finalized`, so a finished competition is
 //!   read once and cached.
 //!
+//! * **Replay** — `MatchReplay` is one document per game of a competition
+//!   match, and unlike the aggregates it carries `version`, the balance patch
+//!   the game was played under. Reading champions and the result from here is
+//!   the only way to split competition history by patch. Using it *replaces*
+//!   the aggregate above; counting both would count every game twice.
+//!
 //! * **Solo rank** — `SoloRankMatch` is one document per match:
 //!   `blue_team[]`/`red_team[]` rows each name a `champion`, and
 //!   `blue_team_win` says who won. These documents are large and there are
@@ -21,6 +27,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use mod_api_stable::{RecordKindV1, StableServerCtx};
 
 use crate::json::Value;
+use crate::patch::{self, Patches};
 use crate::tiers::ChampionRecord;
 
 /// Competition record kinds carrying `statistics.<athlete>.champion_detail`.
@@ -31,6 +38,17 @@ const COMPETITION_KINDS: [RecordKindV1; 2] =
 /// varies with the game rule (5v5, 3v3, 2v2); the scan stops at the first
 /// missing slot and this only guards against a runaway loop.
 const MAX_TEAM_SLOTS: usize = 10;
+
+/// Where competition win rates come from.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Source {
+    /// Per-game `MatchReplay` documents. Carries the balance patch, so patch
+    /// weighting works; costs one scan of the replay table on first use.
+    Replay,
+    /// `champion_detail` aggregates on the competition records. Cheap, but
+    /// they carry no patch information at all.
+    Summary,
+}
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Totals {
@@ -43,6 +61,87 @@ impl Totals {
         self.matches += matches;
         self.wins += wins;
     }
+
+    fn scaled(self, factor: f64) -> Self {
+        Self { matches: self.matches * factor, wins: self.wins * factor }
+    }
+
+    fn plus(self, other: Self) -> Self {
+        Self { matches: self.matches + other.matches, wins: self.wins + other.wins }
+    }
+}
+
+/// One source split into the two patches that count.
+#[derive(Default)]
+struct Split {
+    current: BTreeMap<String, Totals>,
+    previous: BTreeMap<String, Totals>,
+}
+
+impl Split {
+    fn champions(&self) -> impl Iterator<Item = &String> {
+        self.current.keys().chain(self.previous.keys())
+    }
+
+    fn get(&self, champion: &str) -> (Totals, Totals) {
+        (
+            self.current.get(champion).copied().unwrap_or_default(),
+            self.previous.get(champion).copied().unwrap_or_default(),
+        )
+    }
+}
+
+/// Effective per-champion sample: current patch plus the previous one at its
+/// faded weight, with solo-rank games folded in at `solo_weight`.
+///
+/// This is the blend the original `draft_winrate_penalty` mod documented, and
+/// the reason it needs no threshold: the fade is computed per champion from
+/// that champion's own coverage.
+fn blend(competition: &Split, solo: &Split, params: &Params) -> BTreeMap<String, Totals> {
+    let weight = params.solo_weight.max(0.0);
+    let mut blended = BTreeMap::new();
+    let champions: BTreeSet<&String> = competition.champions().chain(solo.champions()).collect();
+    for champion in champions {
+        let (comp_current, comp_previous) = competition.get(champion);
+        let (solo_current, solo_previous) = solo.get(champion);
+        let current = comp_current.plus(solo_current.scaled(weight));
+        let previous = comp_previous.plus(solo_previous.scaled(weight));
+        let fade = patch::previous_fade(
+            current.matches,
+            previous.matches,
+            params.prev_weight,
+            params.confidence_k,
+        );
+        let effective = current.plus(previous.scaled(fade));
+        if effective.matches > 0.0 {
+            blended.insert(champion.clone(), effective);
+        }
+    }
+    blended
+}
+
+/// Picks the current and previous patch buckets out of a versioned source.
+fn select(
+    buckets: &BTreeMap<String, BTreeMap<String, Totals>>,
+    patches: &Patches,
+) -> Split {
+    let bucket = |version: &Option<String>| {
+        version
+            .as_ref()
+            .and_then(|version| buckets.get(version))
+            .cloned()
+            .unwrap_or_default()
+    };
+    Split { current: bucket(&patches.current), previous: bucket(&patches.previous) }
+}
+
+/// Collapses every patch bucket into one table, for the unversioned path.
+fn flatten(buckets: &BTreeMap<String, BTreeMap<String, Totals>>) -> Split {
+    let mut current: BTreeMap<String, Totals> = BTreeMap::new();
+    for champions in buckets.values() {
+        merge(&mut current, champions);
+    }
+    Split { current, previous: BTreeMap::new() }
 }
 
 /// Running aggregate. Kept across recomputes so the expensive first pass is
@@ -52,68 +151,93 @@ pub struct Collector {
     /// Per-competition contribution, keyed by (record kind code, record id).
     /// Cached only once the competition reports `finalized`.
     finished: BTreeMap<(u32, usize), BTreeMap<String, Totals>>,
-    solo: BTreeMap<String, Totals>,
+    /// Competition games from replays, bucketed by balance patch.
+    replay: BTreeMap<String, BTreeMap<String, Totals>>,
+    counted_replays: BTreeSet<usize>,
+    /// Solo-rank games, bucketed the same way.
+    solo: BTreeMap<String, BTreeMap<String, Totals>>,
     counted_solo: BTreeSet<usize>,
 }
 
 /// What one collection pass produced, for the log and the dump header.
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Summary {
+    /// Current-patch competition games.
     pub competition_matches: f64,
+    /// Previous-patch competition games, before the fade is applied.
+    pub previous_matches: f64,
     pub solo_matches: f64,
     pub champions: usize,
-    pub new_solo_records: usize,
+    pub new_records: usize,
+    /// Records still unread, when a scan is spread over several passes.
+    pub remaining: usize,
+    /// The patches in force, empty under `Source::Summary`.
+    pub patches: String,
+}
+
+/// Settings one collection pass needs.
+#[derive(Clone, Copy, Debug)]
+pub struct Params {
+    pub source: Source,
+    pub solo_weight: f64,
+    /// Maximum weight the previous patch can carry. The fade in
+    /// [`patch::previous_fade`] scales it down per champion.
+    pub prev_weight: f64,
+    /// Confidence factor the fade shares with the tier metric.
+    pub confidence_k: f64,
+    /// Records read per pass. Scanning the whole replay table at once stalls
+    /// a management tick, so it is spread over several; 0 lifts the limit.
+    pub budget: usize,
 }
 
 impl Collector {
-    /// Reads everything new since the last pass and returns the blended
-    /// per-champion records. `solo_weight` scales solo-rank games against
-    /// competition games.
-    pub fn collect(
-        &mut self,
-        ctx: &StableServerCtx<'_>,
-        solo_weight: f64,
-    ) -> (Vec<ChampionRecord>, Summary) {
-        let mut competition: BTreeMap<String, Totals> = BTreeMap::new();
-        for kind in COMPETITION_KINDS {
-            for id in ctx.record_ids(kind) {
-                let key = (kind.code(), id);
-                if let Some(cached) = self.finished.get(&key) {
-                    merge(&mut competition, cached);
-                    continue;
-                }
-                let Some(doc) =
-                    ctx.record_get_json(kind, id, "").as_deref().and_then(Value::parse)
-                else {
-                    continue;
-                };
-                let contribution = read_competition(&doc);
-                merge(&mut competition, &contribution);
-                // An in-progress competition still accumulates games, so it
-                // is re-read next pass rather than cached.
-                if doc.get("finalized").is_some_and(|flag| flag == &Value::Bool(true)) {
-                    self.finished.insert(key, contribution);
-                }
+    /// Reads what the budget allows and returns the per-champion records.
+    pub fn collect(&mut self, ctx: &StableServerCtx<'_>, params: &Params) -> (Vec<ChampionRecord>, Summary) {
+        let mut budget = if params.budget == 0 { usize::MAX } else { params.budget };
+        let mut summary = Summary::default();
+
+        let competition = match params.source {
+            Source::Summary => Split { current: self.collect_summary(ctx), previous: BTreeMap::new() },
+            Source::Replay => {
+                let (added, remaining) = self.scan(
+                    ctx,
+                    RecordKindV1::MatchReplay,
+                    &mut budget,
+                    Scan::Replay,
+                );
+                summary.new_records += added;
+                summary.remaining += remaining;
+                Split::default()
             }
-        }
-
-        let new_solo = self.collect_solo(ctx);
-
-        let mut summary = Summary {
-            competition_matches: competition.values().map(|t| t.matches).sum(),
-            solo_matches: self.solo.values().map(|t| t.matches).sum(),
-            new_solo_records: new_solo,
-            champions: 0,
         };
 
-        let weight = solo_weight.max(0.0);
-        let mut blended: BTreeMap<String, Totals> = competition;
-        for (champion, totals) in &self.solo {
-            blended
-                .entry(champion.clone())
-                .or_default()
-                .add(totals.matches * weight, totals.wins * weight);
-        }
+        let (added, remaining) =
+            self.scan(ctx, RecordKindV1::SoloRankMatch, &mut budget, Scan::Solo);
+        summary.new_records += added;
+        summary.remaining += remaining;
+
+        // Patch weighting only means anything when the source carries a
+        // version, so the summary path treats everything as current.
+        let (competition, solo, patches) = match params.source {
+            Source::Summary => (competition, flatten(&self.solo), Patches::default()),
+            Source::Replay => {
+                let patches = Patches::identify(
+                    self.replay.keys().chain(self.solo.keys()).cloned(),
+                );
+                (
+                    select(&self.replay, &patches),
+                    select(&self.solo, &patches),
+                    patches
+                )
+            }
+        };
+        summary.patches = patches.describe();
+
+        let blended = blend(&competition, &solo, params);
+
+        summary.competition_matches = competition.current.values().map(|t| t.matches).sum();
+        summary.previous_matches = competition.previous.values().map(|t| t.matches).sum();
+        summary.solo_matches = solo.current.values().map(|t| t.matches).sum();
 
         summary.champions = blended.len();
         let records = blended
@@ -129,52 +253,131 @@ impl Collector {
         (records, summary)
     }
 
-    /// Adds every solo-rank match not counted before. Reads only the scalar
-    /// fields it needs: these documents carry full per-player stat blocks and
-    /// there are thousands of them.
-    fn collect_solo(&mut self, ctx: &StableServerCtx<'_>) -> usize {
-        let mut added = 0usize;
-        for id in ctx.record_ids(RecordKindV1::SoloRankMatch) {
-            if !self.counted_solo.insert(id) {
-                continue;
-            }
-            let played = ctx
-                .record_get_json(RecordKindV1::SoloRankMatch, id, "played")
-                .as_deref()
-                .and_then(Value::parse);
-            if played != Some(Value::Bool(true)) {
-                continue;
-            }
-            let Some(Value::Bool(blue_won)) = ctx
-                .record_get_json(RecordKindV1::SoloRankMatch, id, "blue_team_win")
-                .as_deref()
-                .and_then(Value::parse)
-            else {
-                continue;
-            };
-
-            for (side, won) in [("blue_team", blue_won), ("red_team", !blue_won)] {
-                for slot in 0..MAX_TEAM_SLOTS {
-                    let path = format!("{side}.{slot}.champion");
-                    let Some(champion) = ctx
-                        .record_get_json(RecordKindV1::SoloRankMatch, id, &path)
-                        .as_deref()
-                        .and_then(Value::parse)
-                        .and_then(|value| value.as_str().map(str::to_string))
-                    else {
-                        // First empty slot ends this side's roster.
-                        break;
-                    };
-                    self.solo
-                        .entry(champion)
-                        .or_default()
-                        .add(1.0, if won { 1.0 } else { 0.0 });
+    /// Sums `champion_detail` over the competition records, caching whichever
+    /// competitions report `finalized`.
+    fn collect_summary(&mut self, ctx: &StableServerCtx<'_>) -> BTreeMap<String, Totals> {
+        let mut competition: BTreeMap<String, Totals> = BTreeMap::new();
+        for kind in COMPETITION_KINDS {
+            for id in ctx.record_ids(kind) {
+                let key = (kind.code(), id);
+                if let Some(cached) = self.finished.get(&key) {
+                    merge(&mut competition, cached);
+                    continue;
+                }
+                let Some(doc) = ctx.record_get_json(kind, id, "").as_deref().and_then(Value::parse)
+                else {
+                    continue;
+                };
+                let contribution = read_competition(&doc);
+                merge(&mut competition, &contribution);
+                // An in-progress competition still accumulates games, so it
+                // is re-read next pass rather than cached.
+                if doc.get("finalized").is_some_and(|flag| flag == &Value::Bool(true)) {
+                    self.finished.insert(key, contribution);
                 }
             }
-            added += 1;
         }
-        added
+        competition
     }
+
+    /// Adds up to `budget` unread match documents of one kind. Returns how
+    /// many were read and how many are still outstanding.
+    ///
+    /// Only the scalar fields that matter are read by path: these documents
+    /// carry full per-player stat blocks and there are thousands of them.
+    fn scan(
+        &mut self,
+        ctx: &StableServerCtx<'_>,
+        kind: RecordKindV1,
+        budget: &mut usize,
+        which: Scan,
+    ) -> (usize, usize) {
+        let (added, mut remaining) = (&mut 0usize, 0usize);
+        for id in ctx.record_ids(kind) {
+            let counted = match which {
+                Scan::Replay => &self.counted_replays,
+                Scan::Solo => &self.counted_solo,
+            };
+            if counted.contains(&id) {
+                continue;
+            }
+            if *budget == 0 {
+                remaining += 1;
+                continue;
+            }
+            *budget -= 1;
+            *added += 1;
+            match which {
+                Scan::Replay => {
+                    self.counted_replays.insert(id);
+                }
+                Scan::Solo => {
+                    self.counted_solo.insert(id);
+                }
+            }
+
+            let Some(game) = read_game(ctx, kind, id, which) else { continue };
+            let bucket = match which {
+                Scan::Replay => &mut self.replay,
+                Scan::Solo => &mut self.solo,
+            };
+            let per_champion = bucket.entry(game.version).or_default();
+            for (champion, won) in game.picks {
+                per_champion
+                    .entry(champion)
+                    .or_default()
+                    .add(1.0, if won { 1.0 } else { 0.0 });
+            }
+        }
+        (*added, remaining)
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Scan {
+    Replay,
+    Solo,
+}
+
+struct Game {
+    version: String,
+    picks: Vec<(String, bool)>,
+}
+
+/// Reads one match document: which patch, and which champion was on the
+/// winning side. `MatchReplay` and `SoloRankMatch` share this shape.
+fn read_game(
+    ctx: &StableServerCtx<'_>,
+    kind: RecordKindV1,
+    id: usize,
+    which: Scan,
+) -> Option<Game> {
+    let scalar = |path: &str| {
+        ctx.record_get_json(kind, id, path).as_deref().and_then(Value::parse)
+    };
+
+    // Solo-rank documents include scheduled matches that have not happened.
+    if which == Scan::Solo && scalar("played") != Some(Value::Bool(true)) {
+        return None;
+    }
+    let Some(Value::Bool(blue_won)) = scalar("blue_team_win") else { return None };
+    // A document with no version cannot be placed in a patch. Replays carry
+    // one; if that ever changes, the game is skipped rather than misfiled.
+    let version = scalar("version")?.as_str()?.to_string();
+
+    let mut picks = Vec::new();
+    for (side, won) in [("blue_team", blue_won), ("red_team", !blue_won)] {
+        for slot in 0..MAX_TEAM_SLOTS {
+            let Some(champion) = scalar(&format!("{side}.{slot}.champion"))
+                .and_then(|value| value.as_str().map(str::to_string))
+            else {
+                // The first empty slot ends this side's roster.
+                break;
+            };
+            picks.push((champion, won));
+        }
+    }
+    (!picks.is_empty()).then_some(Game { version, picks })
 }
 
 fn merge(into: &mut BTreeMap<String, Totals>, from: &BTreeMap<String, Totals>) {
@@ -210,6 +413,100 @@ pub fn read_competition(doc: &Value) -> BTreeMap<String, Totals> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn params(prev_weight: f64, solo_weight: f64) -> Params {
+        Params {
+            source: Source::Replay,
+            solo_weight,
+            prev_weight,
+            confidence_k: 50.0,
+            budget: 0,
+        }
+    }
+
+    fn split(current: &[(&str, f64, f64)], previous: &[(&str, f64, f64)]) -> Split {
+        let table = |rows: &[(&str, f64, f64)]| {
+            rows.iter()
+                .map(|(key, matches, wins)| {
+                    ((*key).to_string(), Totals { matches: *matches, wins: *wins })
+                })
+                .collect()
+        };
+        Split { current: table(current), previous: table(previous) }
+    }
+
+    #[test]
+    fn a_well_covered_champion_barely_uses_the_previous_patch() {
+        let competition = split(&[("ogre", 800.0, 480.0)], &[("ogre", 400.0, 100.0)]);
+        let blended = blend(&competition, &Split::default(), &params(0.8, 0.0));
+        let ogre = blended["ogre"];
+        // The old 25% record must not drag a 60% current record down much.
+        assert!(ogre.wins / ogre.matches > 0.57, "win rate came out {}", ogre.wins / ogre.matches);
+        assert!(ogre.matches < 830.0, "previous patch contributed {} games", ogre.matches - 800.0);
+    }
+
+    #[test]
+    fn a_champion_with_no_games_this_patch_leans_on_the_last_one() {
+        let competition = split(&[("ogre", 1.0, 1.0)], &[("ogre", 400.0, 100.0)]);
+        let blended = blend(&competition, &Split::default(), &params(0.8, 0.0));
+        let ogre = blended["ogre"];
+        assert!(ogre.matches > 250.0, "previous patch only gave {} games", ogre.matches);
+        // And it inherits roughly the old rate rather than the single game.
+        assert!(ogre.wins / ogre.matches < 0.35);
+    }
+
+    #[test]
+    fn patches_older_than_the_previous_one_are_ignored_entirely() {
+        let mut buckets: BTreeMap<String, BTreeMap<String, Totals>> = BTreeMap::new();
+        for (version, matches) in [("2025.0.0", 900.0), ("2026.0.0", 400.0), ("2027.0.0", 800.0)] {
+            buckets.insert(
+                version.to_string(),
+                [("ogre".to_string(), Totals { matches, wins: matches / 2.0 })].into(),
+            );
+        }
+        let patches = Patches::identify(buckets.keys().cloned());
+        let selected = select(&buckets, &patches);
+        assert_eq!(selected.current["ogre"].matches, 800.0);
+        assert_eq!(selected.previous["ogre"].matches, 400.0);
+        // 2025 is present in the data and must not appear anywhere.
+        assert_eq!(selected.current.len() + selected.previous.len(), 2);
+    }
+
+    #[test]
+    fn a_hard_cut_drops_the_previous_patch_outright() {
+        let competition = split(&[("ogre", 4.0, 4.0)], &[("ogre", 900.0, 200.0)]);
+        let blended = blend(&competition, &Split::default(), &params(0.0, 0.0));
+        assert_eq!(blended["ogre"], Totals { matches: 4.0, wins: 4.0 });
+    }
+
+    #[test]
+    fn solo_games_join_at_their_configured_weight() {
+        let competition = split(&[("ogre", 100.0, 50.0)], &[]);
+        let solo = split(&[("ogre", 40.0, 40.0)], &[]);
+        let blended = blend(&competition, &solo, &params(0.8, 0.5));
+        assert_eq!(blended["ogre"], Totals { matches: 120.0, wins: 70.0 });
+    }
+
+    #[test]
+    fn a_champion_seen_only_in_solo_still_appears() {
+        let solo = split(&[("chef", 20.0, 12.0)], &[]);
+        let blended = blend(&Split::default(), &solo, &params(0.8, 0.5));
+        assert_eq!(blended["chef"], Totals { matches: 10.0, wins: 6.0 });
+    }
+
+    #[test]
+    fn the_unversioned_path_counts_every_patch_equally() {
+        let mut buckets: BTreeMap<String, BTreeMap<String, Totals>> = BTreeMap::new();
+        for version in ["2025.0.0", "2026.0.0", "2027.0.0"] {
+            buckets.insert(
+                version.to_string(),
+                [("ogre".to_string(), Totals { matches: 10.0, wins: 5.0 })].into(),
+            );
+        }
+        let flat = flatten(&buckets);
+        assert_eq!(flat.current["ogre"], Totals { matches: 30.0, wins: 15.0 });
+        assert!(flat.previous.is_empty());
+    }
 
     #[test]
     fn sums_champion_detail_across_athletes() {
