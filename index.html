@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>나율이의 대모험</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="stage">
+    <canvas id="game" width="960" height="512"></canvas>
+
+    <div id="touch" class="hidden">
+      <div class="pad-left">
+        <button class="btn" data-key="left" aria-label="왼쪽">◀</button>
+        <button class="btn" data-key="right" aria-label="오른쪽">▶</button>
+      </div>
+      <div class="pad-right">
+        <button class="btn run" data-key="run" aria-label="달리기">달리기</button>
+        <button class="btn jump" data-key="jump" aria-label="점프">점프</button>
+      </div>
+    </div>
+  </div>
+
+  <p id="hint">
+    이동 <b>← →</b> (또는 A / D) · 점프 <b>스페이스 / ↑</b> · 달리기 <b>Shift</b> ·
+    일시정지 <b>P</b> · 소리 <b>M</b> · 다시하기 <b>R</b>
+  </p>
+
+  <script src="js/config.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/input.js"></script>
+  <script src="js/levels.js"></script>
+  <script src="js/sprites.js"></script>
+  <script src="js/entities.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
