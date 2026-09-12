@@ -12,8 +12,20 @@ const root = path.join(__dirname, '..');
 const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
 
 const css = read('css/style.css');
-const scripts = ['js/config.js', 'js/audio.js', 'js/input.js', 'js/levels.js',
-  'js/sprites.js', 'js/entities.js', 'js/game.js'];
+const scripts = [
+  'js/config.js',
+  'js/audio.js',
+  'js/input.js',
+  'js/levels.js',
+  'js/sprites/palette.js',
+  'js/sprites/core.js',
+  'js/sprites/tiles.js',
+  'js/sprites/items.js',
+  'js/sprites/enemies.js',
+  'js/sprites/player.js',
+  'js/entities.js',
+  'js/game.js',
+];
 const js = scripts.map((f) => `/* ===== ${f} ===== */\n${read(f)}`).join('\n\n');
 
 const html = read('index.html');

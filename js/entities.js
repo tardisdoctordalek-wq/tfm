@@ -87,7 +87,7 @@ function overlaps(a, b) {
 class Player {
   constructor(x, y) {
     this.big = false;
-    this.w = 22; this.h = 48;
+    this.w = 24; this.h = 56;
     this.x = x; this.y = y - this.h;
     this.vx = 0; this.vy = 0;
     this.facing = 1;
@@ -106,8 +106,8 @@ class Player {
   setBig(big) {
     const bottom = this.y + this.h;
     this.big = big;
-    this.w = big ? 28 : 22;
-    this.h = big ? 72 : 48;
+    this.w = big ? 28 : 24;
+    this.h = big ? 64 : 56;
     this.y = bottom - this.h;
   }
 
@@ -203,6 +203,7 @@ class Player {
       facing: this.facing,
       state: this.state,
       t: this.t,
+      vy: this.vy,
       big: this.big,
       blink: this.blinkTimer < 0,
     });
