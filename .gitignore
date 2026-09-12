@@ -1,2 +1,8 @@
 node_modules/
 .DS_Store
+
+# 에이전트 작업용 임시 폴더
+.claude/
+
+# 도트 확인용으로 생성되는 그림 (필요할 때 node tools/shot.js 로 다시 만듭니다)
+tools/out/
