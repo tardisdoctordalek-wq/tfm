@@ -109,15 +109,20 @@ function drawNayul(g, P) {
   function arm(sx, sy, ex, ey) {
     g.strokeStyle = C.S; g.lineWidth = 7; g.lineCap = 'round';
     g.beginPath(); g.moveTo(sx, sy + bodyY); g.lineTo(ex, ey + bodyY); g.stroke();
-    g.fillStyle = C.F;
-    g.beginPath(); g.arc(ex, ey + bodyY, 3.6, 0, 7); g.fill();
+    /* 손: 팔과 같은 피부색. 예전에는 가장 밝은 색이라 손만 하얗게 떠 보였습니다 */
+    g.fillStyle = C.S;
+    g.beginPath(); g.arc(ex, ey + bodyY, 4, 0, 7); g.fill();
+    if (!P.small) {                    /* 큰 그림에서만 손등에 작은 빛 */
+      g.fillStyle = C.F;
+      g.beginPath(); g.arc(ex - 1.1, ey - 1.4 + bodyY, 1.5, 0, 7); g.fill();
+    }
   }
   arm(34, 60, P.armLX !== undefined ? P.armLX : 27, P.armLY !== undefined ? P.armLY : 74);
   arm(62, 60, P.armRX !== undefined ? P.armRX : 69, P.armRY !== undefined ? P.armRY : 74);
 
   /* 목 그늘 */
   g.fillStyle = C.s;
-  g.beginPath(); g.roundRect(42, 52 + bodyY, 12, 5, 2.5); g.fill();
+  g.beginPath(); g.roundRect(43, 53 + bodyY, 10, 4, 2); g.fill();
 
   /* ── 얼굴 ── */
   g.fillStyle = C.S;
@@ -125,8 +130,8 @@ function drawNayul(g, P) {
   /* 얼굴 그늘 (오른쪽 아래) */
   g.fillStyle = C.s;
   g.save(); g.beginPath(); g.roundRect(28, 18 + bodyY, 40, 40, 17); g.clip();
-  g.beginPath(); g.moveTo(64, 20 + bodyY); g.lineTo(68, 20 + bodyY);
-  g.lineTo(68, 58 + bodyY); g.lineTo(60, 58 + bodyY); g.closePath(); g.fill();
+  g.beginPath(); g.moveTo(66, 24 + bodyY); g.lineTo(68, 24 + bodyY);
+  g.lineTo(68, 58 + bodyY); g.lineTo(64, 58 + bodyY); g.closePath(); g.fill();
   g.restore();
 
   /* ── 앞머리 ── */
