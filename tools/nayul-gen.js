@@ -54,8 +54,6 @@ function drawNayul(g, P) {
   function leg(cx, off) {
     g.fillStyle = C.S;
     g.beginPath(); g.roundRect(cx - 4, 74 + bodyY, 8, 16 + off, 3); g.fill();
-    g.fillStyle = C.s;
-    g.beginPath(); g.roundRect(cx + 1, 74 + bodyY, 3, 14 + off, 2); g.fill();
     /* 신발 */
     g.fillStyle = C.W;
     g.beginPath(); g.roundRect(cx - 7, 86 + bodyY + off, 14, 9, 4); g.fill();
@@ -120,19 +118,10 @@ function drawNayul(g, P) {
   arm(34, 60, P.armLX !== undefined ? P.armLX : 27, P.armLY !== undefined ? P.armLY : 74);
   arm(62, 60, P.armRX !== undefined ? P.armRX : 69, P.armRY !== undefined ? P.armRY : 74);
 
-  /* 목 그늘 */
-  g.fillStyle = C.s;
-  g.beginPath(); g.roundRect(43, 53 + bodyY, 10, 4, 2); g.fill();
-
   /* ── 얼굴 ── */
   g.fillStyle = C.S;
   g.beginPath(); g.roundRect(28, 18 + bodyY, 40, 40, 17); g.fill();
-  /* 얼굴 그늘 (오른쪽 아래) */
-  g.fillStyle = C.s;
-  g.save(); g.beginPath(); g.roundRect(28, 18 + bodyY, 40, 40, 17); g.clip();
-  g.beginPath(); g.moveTo(66, 24 + bodyY); g.lineTo(68, 24 + bodyY);
-  g.lineTo(68, 58 + bodyY); g.lineTo(64, 58 + bodyY); g.closePath(); g.fill();
-  g.restore();
+  /* 얼굴은 그늘 없이 고른 피부색. 입체감은 바깥 테두리로만 냅니다. */
 
   /* ── 앞머리 ── */
   g.fillStyle = C.K;

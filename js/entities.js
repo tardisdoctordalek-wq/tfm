@@ -96,6 +96,7 @@ class Player {
     this.jumpBuf = 0;
     this.jumping = false;
     this.invuln = 0;
+    this.animT = 0;        /* 걸어간 거리. 발 바꾸는 속도를 여기에 맞춥니다 */
     this.t = 0;
     this.blinkTimer = 120 + Math.random() * 180;
     this.dying = false;
@@ -120,6 +121,7 @@ class Player {
 
   update(level, game) {
     this.t++;
+    this.animT += Math.abs(this.vx);
     this.blinkTimer--;
     if (this.blinkTimer < -8) this.blinkTimer = 120 + Math.random() * 200;
     if (this.invuln > 0) this.invuln--;
@@ -203,6 +205,7 @@ class Player {
       facing: this.facing,
       state: this.state,
       t: this.t,
+      walkT: this.animT,
       vy: this.vy,
       big: this.big,
       blink: this.blinkTimer < 0,
