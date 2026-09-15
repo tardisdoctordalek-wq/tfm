@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><title>도트 확인판</title>
+<style>
+  body { margin:0; padding:16px; background:#2e3140; color:#dfe3f0;
+         font:13px "Apple SD Gothic Neo","Malgun Gothic",sans-serif; }
+  h2 { font-size:14px; margin:18px 0 8px; color:#9fb4ff; letter-spacing:.04em; }
+  .row { display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap; }
+  figure { margin:0; text-align:center; }
+  figcaption { margin-top:4px; opacity:.7; font-size:11px; }
+  canvas { image-rendering:pixelated; }
+  .light canvas { background:#cfd6e6; }
+  .dark canvas { background:#20222e; }
+  .sky canvas { background:#6ec0ff; }
+</style></head>
+<body>
+  <h2>나율이 — 6배 확대 (그림 다듬을 때)</h2>
+  <div class="row dark" id="playerBig"></div>
+
+  <h2>나율이 — 실제 게임 크기 2배 (이 크기에서 알아볼 수 있어야 합니다)</h2>
+  <div class="row sky" id="playerReal"></div>
+
+  <h2>나율이 — 걷기 애니메이션 (왼쪽: 확대, 오른쪽: 실제 크기)</h2>
+  <div class="row sky" id="anim"></div>
+
+  <h2>실루엣 검사 (전부 한 색으로 칠했을 때 알아볼 수 있는지)</h2>
+  <div class="row light" id="silhouette"></div>
+
+  <h2>적 · 아이템</h2>
+  <div class="row sky" id="others"></div>
+
+  <h2>타일 (실제 크기 32px)</h2>
+  <div class="row dark" id="tiles"></div>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/sprites/palette.js"></script>
+  <script src="../js/sprites/core.js"></script>
+  <script src="../js/sprites/tiles.js"></script>
+  <script src="../js/sprites/items.js"></script>
+  <script src="../js/sprites/enemies.js"></script>
+  <script src="../js/sprites/player.js"></script>
+  <script>
+  function cv(w, h) {
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    return c;
+  }
+  function fig(canvas, label, parent) {
+    const f = document.createElement('figure');
+    f.appendChild(canvas);
+    const cap = document.createElement('figcaption');
+    cap.textContent = label;
+    f.appendChild(cap);
+    document.getElementById(parent).appendChild(f);
+  }
+  function grid(g, scale, silhouette) {
+    const c = cv(g[0].length * scale, g.length * scale);
+    const x = c.getContext('2d');
+    if (silhouette) {
+      const flat = {};
+      Object.keys(PAL).forEach(k => { flat[k] = PAL[k] ? '#20222e' : null; });
+      drawPixels(x, g, 0, 0, scale, false, flat);
+    } else {
+      drawPixels(x, g, 0, 0, scale, false);
+    }
+    return c;
+  }
+
+  /* 주인공 프레임 전부 */
+  const order = ['idle','blink','walk1','walk2','walk3','walk4','jump','fall','hurt'];
+  const sets = [['작은', typeof NAYUL !== 'undefined' ? NAYUL : null],
+                ['큰',   typeof NAYUL_BIG !== 'undefined' ? NAYUL_BIG : null]];
+  sets.forEach(([sname, set]) => {
+    if (!set) return;
+    order.forEach(name => {
+      if (!set[name]) return;
+      fig(grid(set[name], 6), sname + ' ' + name + ' (' + set[name][0].length + '×' + set[name].length + ')', 'playerBig');
+      fig(grid(set[name], 2), sname + ' ' + name, 'playerReal');
+      fig(grid(set[name], 3, true), sname + ' ' + name, 'silhouette');
+    });
+  });
+
+  /* 걷기 애니메이션 */
+  (function () {
+    const set = NAYUL;
+    const frames = ['walk1','walk2','walk3','walk4'].map(n => set[n]).filter(Boolean);
+    if (!frames.length) return;
+    const big = cv(frames[0][0].length * 6, frames[0].length * 6 + 6);
+    const real = cv(frames[0][0].length * 2, frames[0].length * 2 + 4);
+    fig(big, '확대 (6배)', 'anim');
+    fig(real, '실제 크기 (2배)', 'anim');
+    let i = 0;
+    setInterval(() => {
+      [[big, 6], [real, 2]].forEach(([c, s]) => {
+        const x = c.getContext('2d');
+        x.clearRect(0, 0, c.width, c.height);
+        drawPixels(x, frames[i % frames.length], 0, 0, s, false);
+      });
+      i++;
+    }, 130);
+  })();
+
+  /* 적과 아이템 */
+  const t = 0;
+  [['밤톨이', (x) => drawWalker(x, 4, 4, 40, 40, 0, 1, false)],
+   ['밤톨이(밟힘)', (x) => drawWalker(x, 4, 4, 40, 40, 0, 1, true)],
+   ['날개새', (x) => drawFlyer(x, 4, 4, 48, 40, 0, 1)],
+   ['코인', (x) => drawCoin(x, 24, 24, 10, 0)],
+   ['하트', (x) => drawHeart(x, 24, 24, 11, 0)]].forEach(([name, fn]) => {
+    const c = cv(56, 56);
+    fn(c.getContext('2d'));
+    fig(c, name, 'others');
+  });
+
+  /* 타일 */
+  ['#', '=', 'B', '?', '!', 'X', '-', '^'].forEach(ch => {
+    ['day', 'cave', 'sky'].forEach(th => {
+      const c = cv(32, 32);
+      drawTile(c.getContext('2d'), ch, 0, 0, th, 0);
+      fig(c, ch + ' ' + th, 'tiles');
+    });
+  });
+  </script>
+</body></html>
