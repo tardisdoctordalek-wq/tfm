@@ -74,6 +74,17 @@ function collideY(e, level, prevBottom, opts) {
       }
     }
   }
+
+  /* 발이 바닥에 딱 맞게 놓인 프레임에는 위 검사가 아무것도 못 찾아서
+     "공중에 떠 있다"고 잘못 판정됩니다. 그래서 평지를 걷는데도 한 프레임씩
+     점프 자세가 섞여 나왔습니다. 발 바로 아래 한 칸을 확인해 바로잡습니다. */
+  if (!e.onGround && e.vy >= 0) {
+    const r = Math.floor((e.y + e.h + 1) / TILE);
+    for (let c = c0; c <= c1; c++) {
+      const platform = !o.ignoreOneWay && isOneWay(level, c, r) && (e.y + e.h) <= r * TILE + 2;
+      if (isSolid(level, c, r) || platform) { e.onGround = true; break; }
+    }
+  }
   return null;
 }
 
@@ -97,6 +108,7 @@ class Player {
     this.jumping = false;
     this.invuln = 0;
     this.animT = 0;        /* 걸어간 거리. 발 바꾸는 속도를 여기에 맞춥니다 */
+    this.skidding = false; /* 달리다 반대 방향을 눌러 미끄러지는 중 */
     this.t = 0;
     this.blinkTimer = 120 + Math.random() * 180;
     this.dying = false;
@@ -115,13 +127,17 @@ class Player {
   get state() {
     if (this.dying) return 'hurt';
     if (!this.onGround) return 'jump';
+    if (this.skidding) return 'skid';          /* 달리다 반대로 꺾을 때 */
     if (Math.abs(this.vx) > 0.35) return 'run';
     return 'idle';
   }
 
   update(level, game) {
     this.t++;
-    this.animT += Math.abs(this.vx);
+    /* 걸어간 거리만큼 걷기 그림을 넘깁니다. 멈추면 순환을 처음으로 돌려
+       다시 걸을 때 늘 같은 자세에서 시작하게 합니다 (마리오와 같은 방식). */
+    if (Math.abs(this.vx) < 0.2) this.animT = 0;
+    else this.animT += Math.abs(this.vx);
     this.blinkTimer--;
     if (this.blinkTimer < -8) this.blinkTimer = 120 + Math.random() * 200;
     if (this.invuln > 0) this.invuln--;
@@ -140,6 +156,10 @@ class Player {
     const running = Input.down.run;
     const maxSpeed = running ? PHYS.MAX_RUN : PHYS.MAX_WALK;
     const accel = this.onGround ? PHYS.ACCEL : PHYS.AIR_ACCEL;
+
+    /* 가던 방향과 반대를 누르면 미끄러집니다 (마리오의 돌아서기) */
+    this.skidding = this.onGround && dir !== 0 && Math.abs(this.vx) > 1.2 &&
+      Math.sign(this.vx) !== dir;
 
     if (this.controllable && dir !== 0) {
       this.vx += dir * accel;

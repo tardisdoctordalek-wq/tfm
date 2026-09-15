@@ -203,6 +203,8 @@ const POSES = {
   walk2: { legN:  0.06, legF: -0.14, armN:  0.04, armF: -0.04, bodyY: 0 },
   walk3: { legN: -0.40, legF:  0.40, armN:  0.34, armF: -0.34, bodyY: 1 },
   walk4: { legN:  0.06, legF: -0.14, armN:  0.04, armF: -0.04, bodyY: 0 },
+  /* 미끄러지며 돌아서기 — 앞발을 버티고 팔을 뒤로 젖힙니다 */
+  skid:  { legN: -0.55, legF:  0.20, armN: -0.95, armF:  0.55, bodyY: 0, mouth: 'open' },
   jump:  { legN: -0.30, legF:  0.34, armN: -1.10, armF: -1.30, bodyY: 0 },
   fall:  { legN:  0.34, legF: -0.18, armN: -1.35, armF: -1.55, bodyY: 0, mouth: 'open' },
   hurt:  { legN: -0.45, legF:  0.45, armN: -1.45, armF: -1.60, bodyY: 1, eyes: 'hurt', mouth: 'open' },
