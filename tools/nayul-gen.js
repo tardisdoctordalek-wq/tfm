@@ -23,7 +23,7 @@ const OUT = opt('out', 'tools/out/nayul96.png');
 
 /* ── 팔레트: 사진에서 뽑은 머리색·피부색 기준 ── */
 const PAL96 = {
-  F: '#ffe0c6', S: '#f5ba97', s: '#d08a6a', d: '#9c5f45',   /* 피부 (사진 기준) */
+  F: '#ffe0c6', S: '#f5ba97', s: '#e5a884', d: '#b2765a',   /* 피부 (사진 기준) */
   H: '#45291c', K: '#2f1f1b', k: '#1a1211', x: '#0b0708',   /* 머리 — 사진처럼 거의 검정 */
   Q: '#ffd3e4', P: '#ff9cc2', p: '#d15f8e', q: '#87385c',   /* 원피스 */
   W: '#ffffff', B: '#e9ecf6', b: '#a9aec6',                  /* 흰옷 · 신발 */
@@ -117,7 +117,7 @@ function drawNayul(g, P) {
 
   /* 목 그늘 */
   g.fillStyle = C.s;
-  g.beginPath(); g.roundRect(41, 50 + bodyY, 14, 7, 3); g.fill();
+  g.beginPath(); g.roundRect(42, 52 + bodyY, 12, 5, 2.5); g.fill();
 
   /* ── 얼굴 ── */
   g.fillStyle = C.S;
@@ -125,8 +125,8 @@ function drawNayul(g, P) {
   /* 얼굴 그늘 (오른쪽 아래) */
   g.fillStyle = C.s;
   g.save(); g.beginPath(); g.roundRect(28, 18 + bodyY, 40, 40, 17); g.clip();
-  g.beginPath(); g.moveTo(62, 18 + bodyY); g.lineTo(68, 18 + bodyY);
-  g.lineTo(68, 58 + bodyY); g.lineTo(52, 58 + bodyY); g.closePath(); g.fill();
+  g.beginPath(); g.moveTo(64, 20 + bodyY); g.lineTo(68, 20 + bodyY);
+  g.lineTo(68, 58 + bodyY); g.lineTo(60, 58 + bodyY); g.closePath(); g.fill();
   g.restore();
 
   /* ── 앞머리 ── */
