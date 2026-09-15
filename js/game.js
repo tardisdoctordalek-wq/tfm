@@ -427,8 +427,10 @@ const Game = {
     ctx.fillStyle = 'rgba(10,12,24,.55)';
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
 
+    /* 메인 화면에서는 정면을 보고 서 있는 모습을 씁니다 */
+    const front = (typeof NAYUL_FRONT96 !== 'undefined') ? NAYUL_FRONT96 : NAYUL96;
     const blinking = Math.floor(this.t / 22) % 9 === 0;
-    const art = blinking && NAYUL96.blink ? NAYUL96.blink : NAYUL96.idle;
+    const art = blinking && front.blink ? front.blink : front.idle;
     drawPixels(ctx, art, VIEW_W / 2 - 96, 46, 2, false);
 
     ctx.textAlign = 'center';
