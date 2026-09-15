@@ -243,7 +243,19 @@ const LETTERS = Object.keys(PAL96);
       c.width = hi; c.height = hi;
       const g = c.getContext('2d');
       g.scale(hi / 96, hi / 96);
-      drawNayul(g, Object.assign({ small: SIZE <= 40 }, POSES[name]));
+      const isSmall = SIZE <= 40;
+      /* 저해상도에서는 부분을 도트 한 칸의 정수배로만 움직여야 합니다.
+         소수점만큼 움직이면 축소할 때 그림 전체가 다시 계산되어,
+         다리가 아니라 몸 전체가 떠는 것처럼 보입니다. */
+      const U = 96 / SIZE;
+      const SMALL_WALK = {
+        walk1: { legLY: -U, legRY: 0 },
+        walk2: {},
+        walk3: { legLY: 0, legRY: -U },
+        walk4: {},
+      };
+      const pose = (isSmall && SMALL_WALK[name]) ? SMALL_WALK[name] : POSES[name];
+      drawNayul(g, Object.assign({ small: isSmall }, pose));
 
       /* 목표 크기로 축소 */
       const small = document.createElement('canvas');
