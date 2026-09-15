@@ -217,10 +217,12 @@ function drawNayul(g, P) {
 const POSES = {
   idle:  {},
   blink: { eyes: 'closed' },
-  walk1: { bodyY: 0, legL: -3, legR: 3, legLY: -1, legRY: 0, armLX: 24, armLY: 70, armRX: 72, armRY: 76 },
-  walk2: { bodyY: -2, legL: 0, legR: 0, legLY: -2, legRY: -1, armLX: 28, armLY: 74, armRX: 68, armRY: 74 },
-  walk3: { bodyY: 0, legL: 3, legR: -3, legLY: 0, legRY: -1, armLX: 30, armLY: 76, armRX: 66, armRY: 70 },
-  walk4: { bodyY: -2, legL: 0, legR: 0, legLY: -1, legRY: -2, armLX: 28, armLY: 74, armRX: 68, armRY: 74 },
+  /* 걷기: 앞을 보고 걷는 그림이라 팔다리를 크게 휘두르면 파닥거려 보입니다.
+     좌우 흔들림은 1칸 안쪽으로 두고, 한쪽 발을 살짝 드는 것으로 걸음을 표현합니다. */
+  walk1: { bodyY: 0,  legL: -1, legR: 1, legLY: -2, legRY: 0,  armLX: 26, armLY: 72, armRX: 70, armRY: 75 },
+  walk2: { bodyY: -1, legL: 0,  legR: 0, legLY: 0,  legRY: 0,  armLX: 27, armLY: 74, armRX: 69, armRY: 74 },
+  walk3: { bodyY: 0,  legL: 1,  legR: -1, legLY: 0, legRY: -2, armLX: 28, armLY: 75, armRX: 68, armRY: 72 },
+  walk4: { bodyY: -1, legL: 0,  legR: 0, legLY: 0,  legRY: 0,  armLX: 27, armLY: 74, armRX: 69, armRY: 74 },
   jump:  { bodyY: -1, legL: -2, legR: 2, legLY: -4, legRY: -2, armLX: 22, armLY: 48, armRX: 74, armRY: 48 },
   fall:  { bodyY: 0, legL: -3, legR: 3, legLY: -2, legRY: -5, armLX: 20, armLY: 54, armRX: 76, armRY: 54, mouth: 'open' },
   hurt:  { bodyY: 1, legL: -4, legR: 4, legLY: 0, legRY: 0, armLX: 22, armLY: 50, armRX: 74, armRY: 50, eyes: 'hurt', mouth: 'open' },
