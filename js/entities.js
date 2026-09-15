@@ -20,10 +20,11 @@ function isOneWay(level, col, row) {
 
 /* 가로 이동 후 벽 밀어내기 */
 function collideX(e, level) {
+  const EPS = 0.01;   /* 1px 을 빼면 벽과 바닥에 그만큼 틈이 생겨 떨립니다 */
   const r0 = Math.floor(e.y / TILE);
-  const r1 = Math.floor((e.y + e.h - 1) / TILE);
+  const r1 = Math.floor((e.y + e.h - EPS) / TILE);
   if (e.vx > 0) {
-    const c = Math.floor((e.x + e.w - 1) / TILE);
+    const c = Math.floor((e.x + e.w - EPS) / TILE);
     for (let r = r0; r <= r1; r++) {
       if (isSolid(level, c, r)) {
         e.x = c * TILE - e.w;
@@ -47,12 +48,13 @@ function collideX(e, level) {
 /* 세로 이동 후 바닥/천장 처리. onBump(col,row) 은 머리로 블록을 칠 때 호출 */
 function collideY(e, level, prevBottom, opts) {
   const o = opts || {};
+  const EPS = 0.01;
   const c0 = Math.floor(e.x / TILE);
-  const c1 = Math.floor((e.x + e.w - 1) / TILE);
+  const c1 = Math.floor((e.x + e.w - EPS) / TILE);
   e.onGround = false;
 
   if (e.vy > 0) {
-    const r = Math.floor((e.y + e.h - 1) / TILE);
+    const r = Math.floor((e.y + e.h - EPS) / TILE);
     for (let c = c0; c <= c1; c++) {
       const landsOnSolid = isSolid(level, c, r);
       const landsOnPlatform = !o.ignoreOneWay && isOneWay(level, c, r) && prevBottom <= r * TILE + 2;
@@ -82,7 +84,12 @@ function collideY(e, level, prevBottom, opts) {
     const r = Math.floor((e.y + e.h + 1) / TILE);
     for (let c = c0; c <= c1; c++) {
       const platform = !o.ignoreOneWay && isOneWay(level, c, r) && (e.y + e.h) <= r * TILE + 2;
-      if (isSolid(level, c, r) || platform) { e.onGround = true; break; }
+      if (isSolid(level, c, r) || platform) {
+        e.onGround = true;
+        e.y = r * TILE - e.h;   /* 바닥에 딱 붙입니다 */
+        e.vy = 0;               /* 안 그러면 매 프레임 조금씩 가라앉았다 올라와 떨립니다 */
+        break;
+      }
     }
   }
   return null;
@@ -109,6 +116,7 @@ class Player {
     this.invuln = 0;
     this.animT = 0;        /* 걸어간 거리. 발 바꾸는 속도를 여기에 맞춥니다 */
     this.skidding = false; /* 달리다 반대 방향을 눌러 미끄러지는 중 */
+    this.moved = 0;        /* 이번 프레임에 실제로 움직인 거리 */
     this.t = 0;
     this.blinkTimer = 120 + Math.random() * 180;
     this.dying = false;
@@ -128,22 +136,19 @@ class Player {
     if (this.dying) return 'hurt';
     if (!this.onGround) return 'jump';
     if (this.skidding) return 'skid';          /* 달리다 반대로 꺾을 때 */
-    if (Math.abs(this.vx) > 0.35) return 'run';
+    if (this.moved > 0.2) return 'run';        /* 실제로 움직였을 때만 걷기 */
     return 'idle';
   }
 
   update(level, game) {
     this.t++;
-    /* 걸어간 거리만큼 걷기 그림을 넘깁니다. 멈추면 순환을 처음으로 돌려
-       다시 걸을 때 늘 같은 자세에서 시작하게 합니다 (마리오와 같은 방식). */
-    if (Math.abs(this.vx) < 0.2) this.animT = 0;
-    else this.animT += Math.abs(this.vx);
     this.blinkTimer--;
     if (this.blinkTimer < -8) this.blinkTimer = 120 + Math.random() * 200;
     if (this.invuln > 0) this.invuln--;
 
     /* 죽는 중: 위로 튀었다가 아래로 떨어지는 연출 */
     if (this.dying) {
+      this.moved = 0;
       this.dieTimer++;
       if (this.dieTimer > 20) {
         this.vy = Math.min(this.vy + PHYS.GRAVITY, PHYS.MAX_FALL);
@@ -190,9 +195,17 @@ class Player {
     if (this.vy > 0) this.jumping = false;
 
     /* 가로 이동 */
+    const prevX = this.x;
     this.x += this.vx;
     if (this.x < 0) { this.x = 0; this.vx = 0; }
     collideX(this, level);
+
+    /* 걷기 그림은 "실제로 움직인 거리" 에 맞춰 넘깁니다.
+       속도(vx)가 아니라 실제 이동량을 쓰는 이유: 벽에 막혀 제자리걸음일 때
+       속도는 있는데 움직이지는 않아서, 그림만 미친 듯이 넘어가 버립니다. */
+    this.moved = Math.abs(this.x - prevX);
+    if (this.moved < 0.2) this.animT = 0;
+    else this.animT += this.moved;
 
     /* 세로 이동 */
     const prevBottom = this.y + this.h;

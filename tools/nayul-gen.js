@@ -293,9 +293,9 @@ function drawNayul(g, P) {
   /* 코 */
   g.beginPath(); g.moveTo(69, 38 + B); g.lineTo(72, 41 + B); g.lineTo(69, 43 + B);
   g.closePath(); g.fill();
-  /* 턱선 아래 목 */
+  /* 턱 아래 목 — 좁게. 예전에는 넓어서 턱 뒤에 혹이 붙은 것처럼 보였습니다 */
   g.fillStyle = C.S;
-  g.beginPath(); g.roundRect(50, 48 + B, 11, 8, 3); g.fill();
+  g.beginPath(); g.roundRect(53, 49 + B, 7, 6, 2); g.fill();
 
   /* 앞머리 — 이마를 덮고 끝이 뾰족하게 */
   g.fillStyle = C.K;
