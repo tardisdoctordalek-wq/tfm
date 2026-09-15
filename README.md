@@ -37,7 +37,31 @@ js/input.js         키보드 / 터치 입력
 js/entities.js      물리, 충돌, 주인공과 적
 js/game.js          게임 진행, 화면, 점수
 tools/build.js      한 파일짜리 HTML로 합치는 빌드 (node tools/build.js)
+tools/png2sprite.js PNG 그림을 도트 코드로 변환 (Piskel 등에서 그린 그림 가져오기)
+tools/spritelab.html 도트 확인판 (확대 / 실제크기 / 실루엣 / 애니메이션)
+tools/shot.js       확인판을 PNG로 저장
+tools/lint-sprites.js 도트 규칙 자동 검사
+docs/PIXEL_STYLE.md 도트 스타일 규칙
+dist/editor.html    브라우저 도트 편집기 (게임 스프라이트를 직접 찍어 고침)
 ```
+
+## 도트 그림 고치기
+
+직접 찍고 싶으면 두 가지 방법이 있습니다.
+
+1. **편집기로 바로 찍기** — `dist/editor.html` 을 브라우저로 엽니다.
+   게임에 들어 있는 그림이 그대로 불러와지고, 고친 뒤 `코드 내보내기` 를 누르면
+   `js/sprites/player.js` 에 붙여 넣을 코드가 나옵니다.
+
+2. **다른 프로그램에서 그리기** — [Piskel](https://www.piskelapp.com)(무료·브라우저),
+   [Aseprite](https://www.aseprite.org)(유료·업계 표준), [Pixilart](https://www.pixilart.com)(모바일) 등.
+   PNG 로 내보낸 뒤:
+
+   ```bash
+   node tools/png2sprite.js 그림.png --frames=4 --names=walk1,walk2,walk3,walk4
+   ```
+
+   팔레트에서 가장 가까운 색으로 자동 정리되어 코드가 나옵니다.
 
 ## 고쳐 보기
 
