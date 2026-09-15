@@ -12,7 +12,7 @@ const root = path.join(__dirname, '..');
 const palSrc = fs.readFileSync(path.join(root, 'js/sprites/palette.js'), 'utf8');
 const known = new Set([...palSrc.matchAll(/^\s*(?:'([^']+)'|([A-Za-z]))\s*:/gm)]
   .map((m) => m[1] || m[2]).filter((c) => c.length === 1));
-['1', '2', '3', '4'].forEach((c) => known.add(c));   // 타일 톤 번호
+['1','2','3','4','5','6','7','8'].forEach((c) => known.add(c));   // 타일 톤 번호(주 재질 1~4, 보조 재질 5~8)
 
 const files = ['player.js', 'enemies.js', 'items.js', 'tiles.js']
   .map((f) => path.join(root, 'js/sprites', f)).filter(fs.existsSync);
