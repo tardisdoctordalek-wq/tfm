@@ -45,187 +45,167 @@ const OUTLINE = {
  * pose: { legL, legR, armL, armR, bodyY, squash, eyes, mouth, arms }
  */
 const DRAW = `
-function rr(x, r, w, h, rad) {}
 function drawNayul(g, P) {
   const C = PAL;
-  const bodyY = P.bodyY || 0;
+  const B = P.bodyY || 0;          /* 바운드: 양수면 몸 전체가 아래로 */
 
-  /* ── 다리 ── */
-  function leg(cx, off) {
-    g.fillStyle = C.S;
-    g.beginPath(); g.roundRect(cx - 4, 74 + bodyY, 8, 16 + off, 3); g.fill();
-    /* 신발 */
-    g.fillStyle = C.W;
-    g.beginPath(); g.roundRect(cx - 7, 86 + bodyY + off, 14, 9, 4); g.fill();
-    g.fillStyle = C.b;
-    g.beginPath(); g.roundRect(cx - 7, 91 + bodyY + off, 14, 4, 2); g.fill();
+  /* 회전 기준점(피봇) — 팔은 어깨, 다리는 골반 */
+  const shX = 57, shY = 61 + B;
+  const hipX = 48, hipY = 71 + B;
+  const LEG = 21, ARM = 13;
+
+  /* 관절을 중심으로 회전하는 다리 (각도는 라디안, + 면 앞쪽) */
+  function leg(ang, skin, shoe) {
+    const fx = hipX + Math.sin(ang) * LEG;
+    const fy = hipY + Math.cos(ang) * LEG;
+    g.strokeStyle = skin; g.lineWidth = 9; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(hipX, hipY); g.lineTo(fx, fy); g.stroke();
+    /* 신발은 바닥에 붙으므로 기울이지 않습니다 */
+    g.fillStyle = shoe;
+    g.beginPath(); g.roundRect(fx - 6, fy - 3, 15, 8, 4); g.fill();
   }
-  leg(40 + (P.legL || 0), P.legLY || 0);
-  leg(57 + (P.legR || 0), P.legRY || 0);
 
-  /* ── 뒷머리 ── */
-  g.fillStyle = C.k;
-  g.beginPath(); g.roundRect(24, 14 + bodyY, 48, 44, 20); g.fill();
+  function arm(ang, skin) {
+    const ex = shX + Math.sin(ang) * ARM;
+    const ey = shY + Math.cos(ang) * ARM;
+    g.strokeStyle = skin; g.lineWidth = 7; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(shX, shY); g.lineTo(ex, ey); g.stroke();
+    g.fillStyle = skin;
+    g.beginPath(); g.arc(ex, ey, 4, 0, 7); g.fill();     /* 주먹 */
+  }
 
-  /* ── 원피스 ── */
+  /* ── 1) 몸 안쪽(먼 쪽) 팔다리 — 어둡게 해서 다리 움직임이 보이게 ── */
+  leg(P.legF || 0, C.s, C.b);
+  arm(P.armF || 0, C.s);
+
+  /* ── 2) 가까운 쪽 다리 ── */
+  leg(P.legN || 0, C.S, C.W);
+
+  /* ── 3) 원피스 (옆에서 본 모양) ── */
   g.fillStyle = C.P;
   g.beginPath();
-  g.moveTo(34, 56 + bodyY); g.lineTo(62, 56 + bodyY);
-  g.lineTo(72, 79 + bodyY); g.lineTo(24, 79 + bodyY);
+  g.moveTo(39, 55 + B); g.lineTo(63, 55 + B);
+  g.lineTo(69, 77 + B); g.lineTo(33, 77 + B);
   g.closePath(); g.fill();
-  /* 치마 그늘 */
-  g.fillStyle = C.p;
+  g.fillStyle = C.p;                     /* 뒤쪽(왼쪽)이 살짝 어둡게 */
   g.beginPath();
-  g.moveTo(56, 56 + bodyY); g.lineTo(62, 56 + bodyY);
-  g.lineTo(72, 79 + bodyY); g.lineTo(60, 79 + bodyY);
+  g.moveTo(39, 55 + B); g.lineTo(44, 55 + B);
+  g.lineTo(40, 77 + B); g.lineTo(33, 77 + B);
   g.closePath(); g.fill();
   g.fillStyle = C.q;
-  g.beginPath(); g.roundRect(24, 76 + bodyY, 48, 4, 2); g.fill();
+  g.beginPath(); g.roundRect(33, 74 + B, 36, 4, 2); g.fill();
+  if (!P.small) {                        /* 치마 무늬 */
+    g.fillStyle = C.Q;
+    [[47, 66], [57, 63], [53, 71], [62, 69]].forEach(function (v) {
+      g.beginPath(); g.arc(v[0], v[1] + B, 1.4, 0, 7); g.fill();
+    });
+  }
   /* 흰 옷깃 */
   g.fillStyle = C.W;
-  g.beginPath(); g.roundRect(36, 53 + bodyY, 24, 6, 3); g.fill();
-  g.fillStyle = C.B;
-  g.beginPath(); g.roundRect(36, 57 + bodyY, 24, 2, 1); g.fill();
-  /* 소매 단 */
-  g.fillStyle = C.Q;
-  g.beginPath(); g.roundRect(32, 58 + bodyY, 8, 6, 3); g.fill();
-  g.beginPath(); g.roundRect(56, 58 + bodyY, 8, 6, 3); g.fill();
-  /* 가슴 리본 */
-  g.fillStyle = C.r;
-  g.beginPath(); g.arc(48, 63 + bodyY, 3, 0, 7); g.fill();
-  g.fillStyle = C.R;
-  g.beginPath(); g.arc(47, 62 + bodyY, 1.1, 0, 7); g.fill();
-  /* 치마 물방울 무늬 (작은 크기에서는 생략) */
-  if (!P.small) {
-    g.fillStyle = C.Q;
-    [[38, 71], [48, 74], [58, 71], [43, 77], [53, 77]].forEach(function (v) {
-      g.beginPath(); g.arc(v[0], v[1] + bodyY, 1.4, 0, 7); g.fill();
-    });
-  }
+  g.beginPath(); g.roundRect(43, 53 + B, 20, 5, 2.5); g.fill();
 
-  /* ── 팔 ── */
-  function arm(sx, sy, ex, ey) {
-    g.strokeStyle = C.S; g.lineWidth = 7; g.lineCap = 'round';
-    g.beginPath(); g.moveTo(sx, sy + bodyY); g.lineTo(ex, ey + bodyY); g.stroke();
-    /* 손: 팔과 같은 피부색. 예전에는 가장 밝은 색이라 손만 하얗게 떠 보였습니다 */
-    g.fillStyle = C.S;
-    g.beginPath(); g.arc(ex, ey + bodyY, 4, 0, 7); g.fill();
-    if (!P.small) {                    /* 큰 그림에서만 손등에 작은 빛 */
-      g.fillStyle = C.F;
-      g.beginPath(); g.arc(ex - 1.1, ey - 1.4 + bodyY, 1.5, 0, 7); g.fill();
-    }
-  }
-  arm(34, 60, P.armLX !== undefined ? P.armLX : 27, P.armLY !== undefined ? P.armLY : 74);
-  arm(62, 60, P.armRX !== undefined ? P.armRX : 69, P.armRY !== undefined ? P.armRY : 74);
+  /* ── 4) 가까운 쪽 팔 (옷 위) ── */
+  arm(P.armN || 0, C.S);
 
-  /* ── 얼굴 ── */
+  /* ── 5) 머리 (오른쪽을 봅니다) ── */
+  /* 뒷머리 · 옆머리 */
+  g.fillStyle = C.K;
+  g.beginPath(); g.roundRect(28, 14 + B, 41, 40, 17); g.fill();
+
+  /* 얼굴 — 앞쪽(오른쪽)만 피부가 보입니다 */
   g.fillStyle = C.S;
-  g.beginPath(); g.roundRect(28, 18 + bodyY, 40, 40, 17); g.fill();
-  /* 얼굴은 그늘 없이 고른 피부색. 입체감은 바깥 테두리로만 냅니다. */
+  g.beginPath(); g.roundRect(50, 24 + B, 21, 27, 10); g.fill();
+  /* 코 */
+  g.beginPath(); g.moveTo(69, 38 + B); g.lineTo(72, 41 + B); g.lineTo(69, 43 + B);
+  g.closePath(); g.fill();
+  /* 턱선 아래 목 */
+  g.fillStyle = C.S;
+  g.beginPath(); g.roundRect(50, 48 + B, 11, 8, 3); g.fill();
 
-  /* ── 앞머리 ── */
+  /* 앞머리 — 이마를 덮고 끝이 뾰족하게 */
   g.fillStyle = C.K;
   g.save();
-  g.beginPath(); g.roundRect(24, 12 + bodyY, 48, 46, 20); g.clip();
+  g.beginPath(); g.roundRect(27, 12 + B, 45, 42, 18); g.clip();
   g.beginPath();
-  g.moveTo(24, 12 + bodyY); g.lineTo(72, 12 + bodyY); g.lineTo(72, 34 + bodyY);
-  /* 앞머리 끝 삐죽삐죽 */
-  g.lineTo(67, 31 + bodyY); g.lineTo(63, 38 + bodyY); g.lineTo(59, 30 + bodyY);
-  g.lineTo(54, 37 + bodyY); g.lineTo(50, 29 + bodyY); g.lineTo(45, 37 + bodyY);
-  g.lineTo(41, 29 + bodyY); g.lineTo(36, 36 + bodyY); g.lineTo(32, 30 + bodyY);
-  g.lineTo(24, 33 + bodyY);
+  g.moveTo(27, 12 + B); g.lineTo(72, 12 + B); g.lineTo(72, 28 + B);
+  g.lineTo(68, 34 + B); g.lineTo(64, 27 + B); g.lineTo(59, 33 + B);
+  g.lineTo(55, 26 + B); g.lineTo(50, 32 + B); g.lineTo(46, 26 + B);
+  g.lineTo(27, 30 + B);
   g.closePath(); g.fill();
-  /* 옆머리 (턱선까지) */
-  g.fillStyle = C.K;
-  g.beginPath(); g.roundRect(22, 20 + bodyY, 10, 36, 5); g.fill();
-  g.beginPath(); g.roundRect(64, 20 + bodyY, 10, 36, 5); g.fill();
-  /* 머리카락 결 (앞머리에 몇 가닥) — 작은 크기에서는 생략 */
-  if (!P.small) {
-  g.strokeStyle = C.k; g.lineWidth = 1.2;
-  [[34, 14, 32, 28], [41, 13, 40, 30], [49, 13, 50, 27], [57, 14, 58, 30], [64, 15, 65, 27]]
-    .forEach(function (v) {
-      g.beginPath(); g.moveTo(v[0], v[1] + bodyY); g.lineTo(v[2], v[3] + bodyY); g.stroke();
-    });
+  if (!P.small) {                        /* 머리카락 결 */
+    g.strokeStyle = C.k; g.lineWidth = 1.2;
+    [[37, 14, 34, 30], [45, 13, 43, 28], [53, 13, 52, 26], [61, 14, 61, 26]]
+      .forEach(function (v) { g.beginPath(); g.moveTo(v[0], v[1] + B); g.lineTo(v[2], v[3] + B); g.stroke(); });
+    g.fillStyle = C.H;                   /* 윤기 */
+    g.globalAlpha = 0.6;
+    g.beginPath(); g.ellipse(43, 18 + B, 7, 2, -0.2, 0, 7); g.fill();
+    g.globalAlpha = 1;
   }
-  /* 머리 하이라이트 (왼쪽 위, 좁게) */
-  g.fillStyle = C.H;
-  g.globalAlpha = 0.65;
-  g.beginPath(); g.ellipse(37, 18 + bodyY, 6, 1.8, -0.32, 0, 7); g.fill();
-  g.globalAlpha = 1;
   g.restore();
 
-  /* ── 정수리 꽁지머리 ── */
+  /* 정수리 꽁지머리 — 뒤로 살짝 눕습니다 */
   g.fillStyle = C.K;
   g.beginPath();
-  g.moveTo(44, 16 + bodyY); g.lineTo(46, 4 + bodyY); g.lineTo(52, 3 + bodyY);
-  g.lineTo(54, 9 + bodyY); g.lineTo(53, 16 + bodyY);
+  g.moveTo(44, 16 + B); g.lineTo(41, 3 + B); g.lineTo(47, 1 + B);
+  g.lineTo(51, 9 + B); g.lineTo(51, 16 + B);
   g.closePath(); g.fill();
-  g.fillStyle = C.k;
-  g.beginPath(); g.moveTo(50, 15 + bodyY); g.lineTo(54, 6 + bodyY);
-  g.lineTo(54, 16 + bodyY); g.closePath(); g.fill();
-  /* 빨간 머리끈 */
   g.fillStyle = C.r;
-  g.beginPath(); g.roundRect(43, 11 + bodyY, 12, 5, 2.5); g.fill();
+  g.save(); g.translate(47, 12 + B); g.rotate(-0.28);
+  g.beginPath(); g.roundRect(-5, -2, 10, 4.5, 2.2); g.fill();
   g.fillStyle = C.R;
-  g.beginPath(); g.roundRect(44, 12 + bodyY, 10, 2, 1); g.fill();
+  g.beginPath(); g.roundRect(-4, -1.2, 8, 1.6, 0.8); g.fill();
+  g.restore();
 
-  /* ── 눈썹 ── */
-  g.strokeStyle = C.K; g.lineWidth = P.small ? 3.2 : 2.4; g.lineCap = 'round';
-  g.beginPath(); g.moveTo(35, 34 + bodyY); g.lineTo(42, 33 + bodyY); g.stroke();
-  g.beginPath(); g.moveTo(54, 33 + bodyY); g.lineTo(61, 34 + bodyY); g.stroke();
+  /* 눈썹 */
+  g.strokeStyle = C.K; g.lineWidth = P.small ? 3 : 2.4; g.lineCap = 'round';
+  g.beginPath(); g.moveTo(56, 31 + B); g.lineTo(64, 32 + B); g.stroke();
 
-  /* ── 눈 ── */
+  /* 눈 (옆모습이라 한쪽만) */
   if (P.eyes === 'closed') {
     g.strokeStyle = C.E; g.lineWidth = 2.6;
-    g.beginPath(); g.arc(39, 41 + bodyY, 4.5, 3.6, 5.8); g.stroke();
-    g.beginPath(); g.arc(57, 41 + bodyY, 4.5, 3.6, 5.8); g.stroke();
+    g.beginPath(); g.arc(60, 38 + B, 4.5, 3.6, 5.8); g.stroke();
   } else if (P.eyes === 'hurt') {
     g.strokeStyle = C.E; g.lineWidth = 2.6;
-    [[39, 41], [57, 41]].forEach(function (p) {
-      g.beginPath(); g.moveTo(p[0] - 4, p[1] - 4 + bodyY); g.lineTo(p[0] + 4, p[1] + 4 + bodyY); g.stroke();
-      g.beginPath(); g.moveTo(p[0] + 4, p[1] - 4 + bodyY); g.lineTo(p[0] - 4, p[1] + 4 + bodyY); g.stroke();
-    });
+    g.beginPath(); g.moveTo(57, 35 + B); g.lineTo(65, 43 + B); g.stroke();
+    g.beginPath(); g.moveTo(65, 35 + B); g.lineTo(57, 43 + B); g.stroke();
   } else {
-    [[39, 41], [57, 41]].forEach(function (p) {
-      const er = P.small ? 6.5 : 5, eh = P.small ? 7.5 : 6;
-      g.fillStyle = C.E;
-      g.beginPath(); g.ellipse(p[0], p[1] + bodyY, er, eh, 0, 0, 7); g.fill();
-      g.fillStyle = C.W;
-      g.beginPath(); g.arc(p[0] - 1.8, p[1] - 2.6 + bodyY, P.small ? 2.6 : 1.9, 0, 7); g.fill();
-      if (!P.small) { g.beginPath(); g.arc(p[0] + 2, p[1] + 2.4 + bodyY, 1, 0, 7); g.fill(); }
-    });
+    const er = P.small ? 5.5 : 4.6, eh = P.small ? 6.5 : 6;
+    g.fillStyle = C.E;
+    g.beginPath(); g.ellipse(60, 38 + B, er, eh, 0, 0, 7); g.fill();
+    g.fillStyle = C.W;
+    g.beginPath(); g.arc(58.6, 35.6 + B, P.small ? 2.2 : 1.8, 0, 7); g.fill();
   }
 
-  /* ── 볼 ── */
+  /* 볼 */
   g.fillStyle = C.C;
   g.globalAlpha = 0.85;
-  g.beginPath(); g.ellipse(32, 48 + bodyY, 4.2, 2.8, 0, 0, 7); g.fill();
-  g.beginPath(); g.ellipse(64, 48 + bodyY, 4.2, 2.8, 0, 0, 7); g.fill();
+  g.beginPath(); g.ellipse(56, 44 + B, 3.4, 2.4, 0, 0, 7); g.fill();
   g.globalAlpha = 1;
 
-  /* ── 입 ── */
-  g.fillStyle = C.M;
+  /* 입 */
   if (P.mouth === 'open') {
-    g.beginPath(); g.ellipse(48, 51 + bodyY, 3.4, 3.6, 0, 0, 7); g.fill();
+    g.fillStyle = C.M;
+    g.beginPath(); g.ellipse(66, 47 + B, 3, 3.2, 0, 0, 7); g.fill();
   } else {
-    g.strokeStyle = C.M; g.lineWidth = P.small ? 3 : 2; g.lineCap = 'round';
-    g.beginPath(); g.arc(48, 48 + bodyY, P.small ? 4.5 : 4, 0.6, 2.54); g.stroke();
+    g.strokeStyle = C.M; g.lineWidth = P.small ? 2.6 : 2; g.lineCap = 'round';
+    g.beginPath(); g.arc(65, 45 + B, 3.2, 0.4, 2.1); g.stroke();
   }
 }
 `;
 
 const POSES = {
-  idle:  {},
-  blink: { eyes: 'closed' },
-  /* 걷기: 앞을 보고 걷는 그림이라 팔다리를 크게 휘두르면 파닥거려 보입니다.
-     좌우 흔들림은 1칸 안쪽으로 두고, 한쪽 발을 살짝 드는 것으로 걸음을 표현합니다. */
-  walk1: { bodyY: 0,  legL: -1, legR: 1, legLY: -2, legRY: 0,  armLX: 26, armLY: 72, armRX: 70, armRY: 75 },
-  walk2: { bodyY: -1, legL: 0,  legR: 0, legLY: 0,  legRY: 0,  armLX: 27, armLY: 74, armRX: 69, armRY: 74 },
-  walk3: { bodyY: 0,  legL: 1,  legR: -1, legLY: 0, legRY: -2, armLX: 28, armLY: 75, armRX: 68, armRY: 72 },
-  walk4: { bodyY: -1, legL: 0,  legR: 0, legLY: 0,  legRY: 0,  armLX: 27, armLY: 74, armRX: 69, armRY: 74 },
-  jump:  { bodyY: -1, legL: -2, legR: 2, legLY: -4, legRY: -2, armLX: 22, armLY: 48, armRX: 74, armRY: 48 },
-  fall:  { bodyY: 0, legL: -3, legR: 3, legLY: -2, legRY: -5, armLX: 20, armLY: 54, armRX: 76, armRY: 54, mouth: 'open' },
-  hurt:  { bodyY: 1, legL: -4, legR: 4, legLY: 0, legRY: 0, armLX: 22, armLY: 50, armRX: 74, armRY: 50, eyes: 'hurt', mouth: 'open' },
+  idle:  { legN: 0.05, legF: -0.06, armN: 0.05, armF: -0.05, bodyY: 0 },
+  blink: { legN: 0.05, legF: -0.06, armN: 0.05, armF: -0.05, bodyY: 0, eyes: 'closed' },
+  /* 걷기 — 블로그 가이드대로
+     ① 다리 벌림(앞발이 가까운 쪽)  ② 모음(바운드로 몸이 위로)  ③ 다리 벌림(반대)
+     walk4 는 ② 와 같은 그림이라 1-2-3-2 순서로 돕니다. */
+  walk1: { legN:  0.40, legF: -0.40, armN: -0.34, armF:  0.34, bodyY: 1 },
+  walk2: { legN:  0.06, legF: -0.14, armN:  0.04, armF: -0.04, bodyY: 0 },
+  walk3: { legN: -0.40, legF:  0.40, armN:  0.34, armF: -0.34, bodyY: 1 },
+  walk4: { legN:  0.06, legF: -0.14, armN:  0.04, armF: -0.04, bodyY: 0 },
+  jump:  { legN: -0.30, legF:  0.34, armN: -1.10, armF: -1.30, bodyY: 0 },
+  fall:  { legN:  0.34, legF: -0.18, armN: -1.35, armF: -1.55, bodyY: 0, mouth: 'open' },
+  hurt:  { legN: -0.45, legF:  0.45, armN: -1.45, armF: -1.60, bodyY: 1, eyes: 'hurt', mouth: 'open' },
 };
 
 const LETTERS = Object.keys(PAL96);
@@ -244,18 +224,19 @@ const LETTERS = Object.keys(PAL96);
       const g = c.getContext('2d');
       g.scale(hi / 96, hi / 96);
       const isSmall = SIZE <= 40;
+      /* 바운드는 도트 한 칸의 정수배여야 합니다. 소수점만큼 올리면
+         축소할 때 머리까지 다시 계산되어 몸 전체가 떨려 보입니다. */
+      const dot = 96 / SIZE;
+      const bounce = Math.max(1, Math.round(3.4 / dot)) * dot;
       /* 저해상도에서는 부분을 도트 한 칸의 정수배로만 움직여야 합니다.
          소수점만큼 움직이면 축소할 때 그림 전체가 다시 계산되어,
          다리가 아니라 몸 전체가 떠는 것처럼 보입니다. */
       const U = 96 / SIZE;
-      const SMALL_WALK = {
-        walk1: { legLY: -U, legRY: 0 },
-        walk2: {},
-        walk3: { legLY: 0, legRY: -U },
-        walk4: {},
-      };
-      const pose = (isSmall && SMALL_WALK[name]) ? SMALL_WALK[name] : POSES[name];
-      drawNayul(g, Object.assign({ small: isSmall }, pose));
+      const pose = POSES[name];
+      drawNayul(g, Object.assign({}, pose, {
+        small: isSmall,
+        bodyY: (pose.bodyY || 0) * bounce,
+      }));
 
       /* 목표 크기로 축소 */
       const small = document.createElement('canvas');
