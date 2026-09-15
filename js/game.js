@@ -427,10 +427,9 @@ const Game = {
     ctx.fillStyle = 'rgba(10,12,24,.55)';
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
 
-    drawNayul(ctx, VIEW_W / 2 - 50, 100, 100, 120, {
-      facing: 1, state: 'idle', t: this.t, big: false,
-      blink: Math.floor(this.t / 90) % 12 === 0,
-    });
+    const blinking = Math.floor(this.t / 22) % 9 === 0;
+    const art = blinking && NAYUL96.blink ? NAYUL96.blink : NAYUL96.idle;
+    drawPixels(ctx, art, VIEW_W / 2 - 96, 46, 2, false);
 
     ctx.textAlign = 'center';
     ctx.fillStyle = '#fff';

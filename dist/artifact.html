@@ -460,44 +460,115 @@ const LEVELS = [
 ];
 
 
-/* ===== js/sprites.js ===== */
+/* ===== js/sprites/palette.js ===== */
 /* ============================================================
- *  도트(픽셀) 스프라이트 — 이미지 파일 없이 점 하나하나를 찍어 그립니다.
- *  아래 글자 한 칸이 도트 한 개입니다. 글자만 바꾸면 그림이 바뀝니다.
+ *  공용 도트 팔레트
+ *  ─ 모든 도트 그림은 여기 있는 색만 씁니다. 색을 마음대로 늘리면
+ *    그림마다 톤이 달라져서 전체가 따로 놀게 됩니다.
+ *  ─ 재질마다 "밝음 → 기본 → 그늘 → 최암부" 4단 계단(램프)을 씁니다.
+ *  ─ 어두워질수록 색상을 붉은/보라 쪽으로, 밝아질수록 노란 쪽으로
+ *    살짝 틀어 두었습니다(hue shift). 회색만 섞으면 탁해집니다.
+ *  ─ 피부·머리 색은 실제 사진에서 뽑아낸 값입니다 (tools/photo2pixel.js).
  * ========================================================== */
 
-/* 팔레트: 글자 → 색 */
 const PAL = {
   '.': null,               // 투명
-  X: '#1a1220',            // 외곽선
-  K: '#241b1c',            // 머리(검정에 가까운 짙은 갈색)
-  k: '#3b2c27',            // 머리 중간톤
-  H: '#5d4638',            // 머리 하이라이트
-  R: '#e23b4f',            // 빨간 머리끈
-  S: '#ffd9b9',            // 피부
-  s: '#e8b998',            // 피부 그늘
-  E: '#241a2a',            // 눈동자
-  W: '#ffffff',            // 눈 반짝임
-  C: '#ff9fb0',            // 볼터치
-  M: '#c4415a',            // 입
-  P: '#ff8fb3',            // 분홍 원피스
-  p: '#d9648f',            // 원피스 그늘
-  L: '#fff4f8',            // 흰 장식
-  B: '#f7f7fc',            // 신발
-  b: '#c5c8d8',            // 신발 그늘
-  Y: '#ffd451',            // 코인 노랑
-  y: '#e2a221',            // 코인 그늘
-  N: '#9a5f2c',            // 밤톨이 몸
-  n: '#75461f',            // 밤톨이 그늘
-  V: '#9b7ce0',            // 새 몸
-  v: '#6f53ad',            // 새 그늘
-  O: '#ffb43a',            // 부리
-  G: '#ff4f7b',            // 하트
-  g: '#d63057',            // 하트 그늘
+
+  /* ── 피부 ── */
+  F: '#ffe0c6',            // 밝음(빛 받는 면)
+  S: '#f5ba97',            // 기본
+  s: '#d08a6a',            // 그늘
+  d: '#9c5f45',            // 최암부 / 피부 외곽선
+
+  /* ── 머리카락 (검정에 가까운 짙은 갈색) ── */
+  H: '#45291c',            // 하이라이트
+  K: '#2f1f1b',            // 기본
+  k: '#1a1211',            // 그늘
+  x: '#0b0708',            // 최암부 / 머리 외곽선
+
+  /* ── 분홍 원피스 ── */
+  Q: '#ffd3e4',            // 밝음
+  P: '#ff9cc2',            // 기본
+  p: '#d15f8e',            // 그늘
+  q: '#87385c',            // 최암부 / 옷 외곽선
+
+  /* ── 흰 옷 · 신발 ── */
+  W: '#ffffff',            // 순백 / 반짝임
+  B: '#e9ecf6',            // 기본
+  b: '#a9aec6',            // 그늘
+
+  /* ── 빨간 머리끈 ── */
+  R: '#ff7a72',            // 밝음
+  r: '#cf2038',            // 기본/그늘
+
+  /* ── 얼굴 ── */
+  E: '#0b0708',            // 눈동자
+  C: '#ff8fa4',            // 볼터치
+  M: '#c33a4f',            // 입
+
+  /* ── 밤톨이(걷는 적) ── */
+  U: '#c9873f',
+  N: '#9a5f2c',
+  n: '#6d4020',
+  j: '#3a2110',
+
+  /* ── 날개새(나는 적) ── */
+  V: '#c9a8ff',
+  v: '#9b7ce0',
+  w: '#6f53ad',
+  z: '#392a5e',
+  O: '#ffc247',            // 부리 밝음
+  o: '#d98e1f',            // 부리 그늘
+
+  /* ── 코인 ── */
+  Y: '#fff0a8',
+  y: '#ffd451',
+  g: '#e0a51f',
+  h: '#8f6413',
+
+  /* ── 하트 ── */
+  T: '#ff9ec0',
+  t: '#ff4f7b',
+  u: '#c02352',
+
+  /* ── 공용 어두운 선 (눈매, 입매처럼 재질 램프로 안 되는 곳에만) ── */
+  X: '#1b1420',
+
+  /* ── 예전 글자 호환 (옛 그림이 깨지지 않도록) ── */
+  L: '#fff4f8',
+  G: '#ff4f7b',
 };
 
-/* 도트 그림을 화면에 찍습니다 */
-function drawPixels(ctx, grid, x, y, scale, flip) {
+/* 타일은 스테이지 테마(들판/동굴/하늘)마다 색이 바뀝니다.
+ * 그래서 타일 그림은 색 글자 대신 "톤 번호"로 그립니다.
+ *   1 2 3 4 = 주 재질의 밝음 / 기본 / 그늘 / 최암부
+ *   5 6 7 8 = 보조 재질(잔디, 장식 등)의 밝음 / 기본 / 그늘 / 최암부
+ * 테마 램프를 넣어 주면 그때 실제 색이 정해집니다.
+ *
+ *   drawPixels(ctx, DIRT, x, y, 2, false, tonePal(theme.dirt, theme.grass));
+ */
+function tonePal(main, sub) {
+  const m = main || [], s = sub || [];
+  return {
+    '.': null,
+    1: m[0], 2: m[1], 3: m[2], 4: m[3],
+    5: s[0], 6: s[1], 7: s[2], 8: s[3],
+  };
+}
+
+
+/* ===== js/sprites/core.js ===== */
+/* ============================================================
+ *  도트 렌더링 핵심
+ *  drawPixels(ctx, grid, x, y, scale, flip, pal)
+ *    grid  : 글자 배열. 글자 한 개가 도트 한 개입니다.
+ *    scale : 반드시 정수 배율만 사용하세요 (1, 2, 3...).
+ *    pal   : 생략하면 공용 팔레트 PAL 을 씁니다.
+ *            타일처럼 테마마다 색이 달라지는 그림은 자기 팔레트를 넘깁니다.
+ * ========================================================== */
+
+function drawPixels(ctx, grid, x, y, scale, flip, pal) {
+  const p = pal || PAL;
   ctx.save();
   if (flip) {
     ctx.translate(Math.round(x) + grid[0].length * scale, Math.round(y));
@@ -508,332 +579,13 @@ function drawPixels(ctx, grid, x, y, scale, flip) {
   for (let r = 0; r < grid.length; r++) {
     const line = grid[r];
     for (let c = 0; c < line.length; c++) {
-      const col = PAL[line[c]];
+      const col = p[line[c]];
       if (!col) continue;
       ctx.fillStyle = col;
       ctx.fillRect(c * scale, r * scale, scale, scale);
     }
   }
   ctx.restore();
-}
-
-/* ─────────────────────────────────────────────
- *  나율이 (20 × 24 도트)
- *  앞머리 단발 + 정수리 꽁지머리(빨간 머리끈) + 분홍 원피스
- *  외곽선(X)과 음영을 넣은 RPG풍 도트 스타일입니다.
- * ───────────────────────────────────────────── */
-const NAYUL = {
-    idle: [
-      '.........XX.........',
-      '........XkKX........',
-      '........XKKX........',
-      '.......XXRRXX.......',
-      '......XKKKKKKX......',
-      '.....XKKKKKKKKX.....',
-      '....XKKHKKKKKKKX....',
-      '....XKKKKKKKKKKX....',
-      '....XKSSSSSSSSKX....',
-      '....XKSEWSSEWSKX....',
-      '....XKSEESSEESKX....',
-      '....XKSCSSSSCSKX....',
-      '.....XSSSMMSSSX.....',
-      '......XXSSSSXX......',
-      '........XSSX........',
-      '.....XPPPPPPPPX.....',
-      '...XSSPPPPPPPPSSX...',
-      '...XSSPPPPPPPPSSX...',
-      '...XSPPPPPPPPPPSX...',
-      '..XPPPPPPPPPPPPPPX..',
-      '..XppppppppppppppX..',
-      '.....XSSX..XSSX.....',
-      '.....XSSX..XSSX.....',
-      '....XBBBX..XBBBX....',
-    ],
-    walk1: [
-      '.........XX.........',
-      '........XkKX........',
-      '........XKKX........',
-      '.......XXRRXX.......',
-      '......XKKKKKKX......',
-      '.....XKKKKKKKKX.....',
-      '....XKKHKKKKKKKX....',
-      '....XKKKKKKKKKKX....',
-      '....XKSSSSSSSSKX....',
-      '....XKSEWSSEWSKX....',
-      '....XKSEESSEESKX....',
-      '....XKSCSSSSCSKX....',
-      '.....XSSSMMSSSX.....',
-      '......XXSSSSXX......',
-      '........XSSX........',
-      '.....XPPPPPPPPX.....',
-      '..XSSXPPPPPPPPXSSX..',
-      '..XSSPPPPPPPPPPSSX..',
-      '...XXPPPPPPPPPPXX...',
-      '..XPPPPPPPPPPPPPPX..',
-      '..XppppppppppppppX..',
-      '....XSSX....XSSX....',
-      '....XSSX....XSSX....',
-      '...XBBBX....XBBBX...',
-    ],
-    walk2: [
-      '.........XX.........',
-      '........XkKX........',
-      '........XKKX........',
-      '.......XXRRXX.......',
-      '......XKKKKKKX......',
-      '.....XKKKKKKKKX.....',
-      '....XKKHKKKKKKKX....',
-      '....XKKKKKKKKKKX....',
-      '....XKSSSSSSSSKX....',
-      '....XKSEWSSEWSKX....',
-      '....XKSEESSEESKX....',
-      '....XKSCSSSSCSKX....',
-      '.....XSSSMMSSSX.....',
-      '......XXSSSSXX......',
-      '........XSSX........',
-      '.....XPPPPPPPPX.....',
-      '....XSPPPPPPPPSX....',
-      '...XSSPPPPPPPPSSX...',
-      '...XSSPPPPPPPPSSX...',
-      '..XPPPPPPPPPPPPPPX..',
-      '..XppppppppppppppX..',
-      '......XSSXXSSX......',
-      '......XSSXXSSX......',
-      '.....XBBBXXBBBX.....',
-    ],
-    jump: [
-      '.........XX.........',
-      '........XkKX........',
-      '........XKKX........',
-      '.......XXRRXX.......',
-      '......XKKKKKKX......',
-      '.....XKKKKKKKKX.....',
-      '....XKKHKKKKKKKX....',
-      '....XKKKKKKKKKKX....',
-      '....XKSSSSSSSSKX....',
-      '....XKSEWSSEWSKX....',
-      '....XKSEESSEESKX....',
-      '....XKSCSSSSCSKX....',
-      '.....XSSSMMSSSX.....',
-      '......XXSSSSXX......',
-      '........XSSX........',
-      '.....XPPPPPPPPX.....',
-      'XSSXXXPPPPPPPPXXXSSX',
-      '.XSSXXPPPPPPPPXXSSX.',
-      '...XXPPPPPPPPPPXX...',
-      '..XPPPPPPPPPPPPPPX..',
-      '..XppppppppppppppX..',
-      '....XSSX....XSSX....',
-      '...XSSX......XSSX...',
-      '..XBBBX......XBBBX..',
-    ],
-    hurt: [
-      '.........XX.........',
-      '........XkKX........',
-      '........XKKX........',
-      '.......XXRRXX.......',
-      '......XKKKKKKX......',
-      '.....XKKKKKKKKX.....',
-      '....XKKHKKKKKKKX....',
-      '....XKKKKKKKKKKX....',
-      '....XKSSSSSSSSKX....',
-      '....XKSXSSSSXSKX....',
-      '....XKSSXSSXSSKX....',
-      '....XKSCSSSSCSKX....',
-      '.....XSSSMMSSSX.....',
-      '......XXSMMSXX......',
-      '........XSSX........',
-      '.....XPPPPPPPPX.....',
-      'XSSXXXPPPPPPPPXXXSSX',
-      '.XSSXXPPPPPPPPXXSSX.',
-      '...XXPPPPPPPPPPXX...',
-      '..XPPPPPPPPPPPPPPX..',
-      '..XppppppppppppppX..',
-      '...XSSX......XSSX...',
-      '...XSSX......XSSX...',
-      '..XBBBX......XBBBX..',
-    ],
-};
-
-/* 눈 감기(깜빡임) 처리 */
-function blinkGrid(grid) {
-  const g = grid.slice();
-  g[9]  = '....XKSSSSSSSSKX....';
-  g[10] = '....XKSXXSSXXSKX....';
-  return g;
-}
-
-/*
- * o = { facing, state('idle'|'run'|'jump'|'hurt'), t, big, blink }
- * (x, y, w, h) 는 충돌 상자. 도트 그림은 그 상자 가운데/바닥에 맞춰 그립니다.
- */
-function drawNayul(ctx, x, y, w, h, o) {
-  const scale = Math.max(2, Math.round(h / 24));
-  let grid;
-  if (o.state === 'hurt') grid = NAYUL.hurt;
-  else if (o.state === 'jump') grid = NAYUL.jump;
-  else if (o.state === 'run') grid = (Math.floor(o.t / 7) % 4 === 1) ? NAYUL.walk1
-    : (Math.floor(o.t / 7) % 4 === 3) ? NAYUL.walk2 : NAYUL.idle;
-  else grid = NAYUL.idle;
-  if (o.blink && o.state !== 'hurt') grid = blinkGrid(grid);
-
-  const sw = grid[0].length * scale;
-  const sh = grid.length * scale;
-  const px = x + w / 2 - sw / 2;
-  const py = y + h - sh;
-
-  /* 그림자 */
-  ctx.fillStyle = 'rgba(0,0,0,.18)';
-  ctx.beginPath();
-  ctx.ellipse(x + w / 2, y + h, w * 0.5, 3.5, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  drawPixels(ctx, grid, px, py, scale, o.facing < 0);
-
-  /* 아이템 먹어 커졌을 때: 머리 위 반짝이는 별 */
-  if (o.big) {
-    drawStar(ctx, x + w / 2, py - 6 + Math.sin(o.t * 0.12) * 2, 6, '#ffe66d');
-  }
-}
-
-/* ─────────── 밤톨이 (걸어다니는 적, 12 × 12) ─────────── */
-const WALKER = [
-  [
-    '....NNNN....',
-    '..NNNNNNNN..',
-    '.NNNNNNNNNN.',
-    '.NNNNNNNNNN.',
-    '.NWWNNNNWWN.',
-    '.NWEWNNWEWN.',
-    '.NNNNNNNNNN.',
-    '..NNXXXXNN..',
-    '.nnnnnnnnnn.',
-    '..nnnnnnnn..',
-    '.XX......XX.',
-    '.XX......XX.',
-  ],
-  [
-    '....NNNN....',
-    '..NNNNNNNN..',
-    '.NNNNNNNNNN.',
-    '.NNNNNNNNNN.',
-    '.NWWNNNNWWN.',
-    '.NWEWNNWEWN.',
-    '.NNNNNNNNNN.',
-    '..NNXXXXNN..',
-    '.nnnnnnnnnn.',
-    '..nnnnnnnn..',
-    '..XX....XX..',
-    '..XX....XX..',
-  ],
-];
-
-const WALKER_FLAT = [
-  '............',
-  '............',
-  '............',
-  '............',
-  '............',
-  '............',
-  '....NNNN....',
-  '..NNNNNNNN..',
-  '.NNNNXXNNNN.',
-  '.nnnnnnnnnn.',
-  '.XXnnnnnnXX.',
-  '.XX......XX.',
-];
-
-function drawWalker(ctx, x, y, w, h, t, dir, squashed) {
-  const grid = squashed ? WALKER_FLAT : WALKER[Math.floor(t / 10) % 2];
-  const scale = Math.max(2, Math.round(h / 12));
-  const sw = grid[0].length * scale;
-  ctx.fillStyle = 'rgba(0,0,0,.18)';
-  ctx.beginPath();
-  ctx.ellipse(x + w / 2, y + h, w * 0.45, 3, 0, 0, Math.PI * 2);
-  ctx.fill();
-  drawPixels(ctx, grid, x + w / 2 - sw / 2, y + h - grid.length * scale, scale, dir < 0);
-}
-
-/* ─────────── 날개새 (날아다니는 적, 14 × 11) ─────────── */
-const FLYER = [
-  [
-    '..v........v..',
-    '.vv........vv.',
-    '.vvv.VVVV.vvv.',
-    '..vvVVVVVVvv..',
-    '...VVVVVVVV...',
-    '...VVWWVVVV...',
-    '...VVWEVVVV.O.',
-    '...VVVVVVVOOO.',
-    '....VVVVVV.O..',
-    '.....VVVV.....',
-    '.....v..v.....',
-  ],
-  [
-    '..............',
-    '..............',
-    '.....VVVV.....',
-    'vvvvVVVVVVvvvv',
-    '.vvVVVVVVVVvv.',
-    '...VVWWVVVV...',
-    '...VVWEVVVV.O.',
-    '...VVVVVVVOOO.',
-    '....VVVVVV.O..',
-    '.....VVVV.....',
-    '.....v..v.....',
-  ],
-];
-
-function drawFlyer(ctx, x, y, w, h, t, dir) {
-  const grid = FLYER[Math.floor(t / 8) % 2];
-  const scale = Math.max(2, Math.round(h / 11));
-  const sw = grid[0].length * scale;
-  const sh = grid.length * scale;
-  drawPixels(ctx, grid, x + w / 2 - sw / 2, y + h / 2 - sh / 2, scale, dir < 0);
-}
-
-/* ─────────── 코인(별동전) 10 × 10 ─────────── */
-const COIN = [
-  '...YYYY...',
-  '..YYYYYY..',
-  '.YYyyyyYY.',
-  '.YyYYYYyY.',
-  'YYyYYYYyYY',
-  'YYyYYYYyYY',
-  '.YyYYYYyY.',
-  '.YYyyyyYY.',
-  '..YYYYYY..',
-  '...YYYY...',
-];
-
-function drawCoin(ctx, cx, cy, r, t) {
-  const squeeze = Math.max(0.16, Math.abs(Math.cos(t * 0.07)));
-  const scale = Math.max(2, Math.round((r * 2) / 10));
-  const sw = 10 * scale;
-  ctx.save();
-  ctx.translate(cx, cy);
-  ctx.scale(squeeze, 1);
-  drawPixels(ctx, COIN, -sw / 2, -sw / 2, scale, false);
-  ctx.restore();
-}
-
-/* ─────────── 하트 아이템 11 × 9 ─────────── */
-const HEART = [
-  '..GG...GG..',
-  '.GGGGGGGGG.',
-  'GGWGGGGGGGG',
-  'GGWGGGGGGGG',
-  'gGGGGGGGGGg',
-  '.gGGGGGGGg.',
-  '..gGGGGGg..',
-  '...gGGGg...',
-  '....gGg....',
-];
-
-function drawHeart(ctx, cx, cy, r, t) {
-  const scale = Math.max(2, Math.round((r * 2) / 11));
-  const bob = Math.sin(t * 0.12) * 2;
-  drawPixels(ctx, HEART, cx - (11 * scale) / 2, cy - (9 * scale) / 2 + bob, scale, false);
 }
 
 /* ─────────── 도형 보조 함수 ─────────── */
@@ -873,7 +625,14 @@ function drawStar(ctx, cx, cy, r, color) {
   ctx.fill();
 }
 
-/* ─────────── 타일 ─────────── */
+
+/* ===== js/sprites/tiles.js ===== */
+/* ============================================================
+ *  타일과 배경
+ *  한 타일은 32 x 32 픽셀입니다.
+ *  THEME 은 스테이지별(들판/동굴/하늘) 색 묶음입니다.
+ * ========================================================== */
+
 const THEME = {
   day:  { sky1: '#6ec0ff', sky2: '#bfe9ff', dirt: '#a8622f', dirtDark: '#8a4c21', grass: '#5fbf4a', grassDark: '#3f9a33', stone: '#9fb0c2', hill: '#57b94a' },
   cave: { sky1: '#1b1436', sky2: '#3a2a63', dirt: '#5a4a6e', dirtDark: '#443758', grass: '#7d6bb0', grassDark: '#5c4d8a', stone: '#8a94b8', hill: '#2a2048' },
@@ -1046,6 +805,1683 @@ function drawBackground(ctx, camX, th, t) {
 }
 
 
+/* ===== js/sprites/items.js ===== */
+/* ============================================================
+ *  아이템 도트
+ *  코인(별동전), 하트
+ * ========================================================== */
+
+const COIN = [
+  '...YYYY...',
+  '..YYYYYY..',
+  '.YYyyyyYY.',
+  '.YyYYYYyY.',
+  'YYyYYYYyYY',
+  'YYyYYYYyYY',
+  '.YyYYYYyY.',
+  '.YYyyyyYY.',
+  '..YYYYYY..',
+  '...YYYY...',
+];
+
+function drawCoin(ctx, cx, cy, r, t) {
+  const squeeze = Math.max(0.16, Math.abs(Math.cos(t * 0.07)));
+  const scale = Math.max(2, Math.round((r * 2) / 10));
+  const sw = 10 * scale;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(squeeze, 1);
+  drawPixels(ctx, COIN, -sw / 2, -sw / 2, scale, false);
+  ctx.restore();
+}
+
+const HEART = [
+  '..GG...GG..',
+  '.GGGGGGGGG.',
+  'GGWGGGGGGGG',
+  'GGWGGGGGGGG',
+  'gGGGGGGGGGg',
+  '.gGGGGGGGg.',
+  '..gGGGGGg..',
+  '...gGGGg...',
+  '....gGg....',
+];
+
+function drawHeart(ctx, cx, cy, r, t) {
+  const scale = Math.max(2, Math.round((r * 2) / 11));
+  const bob = Math.sin(t * 0.12) * 2;
+  drawPixels(ctx, HEART, cx - (11 * scale) / 2, cy - (9 * scale) / 2 + bob, scale, false);
+}
+
+
+/* ===== js/sprites/enemies.js ===== */
+/* ============================================================
+ *  적 도트
+ *  밤톨이(걸어다니는 적), 날개새(날아다니는 적)
+ * ========================================================== */
+
+const WALKER = [
+  [
+    '....NNNN....',
+    '..NNNNNNNN..',
+    '.NNNNNNNNNN.',
+    '.NNNNNNNNNN.',
+    '.NWWNNNNWWN.',
+    '.NWEWNNWEWN.',
+    '.NNNNNNNNNN.',
+    '..NNXXXXNN..',
+    '.nnnnnnnnnn.',
+    '..nnnnnnnn..',
+    '.XX......XX.',
+    '.XX......XX.',
+  ],
+  [
+    '....NNNN....',
+    '..NNNNNNNN..',
+    '.NNNNNNNNNN.',
+    '.NNNNNNNNNN.',
+    '.NWWNNNNWWN.',
+    '.NWEWNNWEWN.',
+    '.NNNNNNNNNN.',
+    '..NNXXXXNN..',
+    '.nnnnnnnnnn.',
+    '..nnnnnnnn..',
+    '..XX....XX..',
+    '..XX....XX..',
+  ],
+];
+
+const WALKER_FLAT = [
+  '............',
+  '............',
+  '............',
+  '............',
+  '............',
+  '............',
+  '....NNNN....',
+  '..NNNNNNNN..',
+  '.NNNNXXNNNN.',
+  '.nnnnnnnnnn.',
+  '.XXnnnnnnXX.',
+  '.XX......XX.',
+];
+
+function drawWalker(ctx, x, y, w, h, t, dir, squashed) {
+  const grid = squashed ? WALKER_FLAT : WALKER[Math.floor(t / 10) % 2];
+  const scale = Math.max(2, Math.round(h / 12));
+  const sw = grid[0].length * scale;
+  ctx.fillStyle = 'rgba(0,0,0,.18)';
+  ctx.beginPath();
+  ctx.ellipse(x + w / 2, y + h, w * 0.45, 3, 0, 0, Math.PI * 2);
+  ctx.fill();
+  drawPixels(ctx, grid, x + w / 2 - sw / 2, y + h - grid.length * scale, scale, dir < 0);
+}
+
+const FLYER = [
+  [
+    '..v........v..',
+    '.vv........vv.',
+    '.vvv.VVVV.vvv.',
+    '..vvVVVVVVvv..',
+    '...VVVVVVVV...',
+    '...VVWWVVVV...',
+    '...VVWEVVVV.O.',
+    '...VVVVVVVOOO.',
+    '....VVVVVV.O..',
+    '.....VVVV.....',
+    '.....v..v.....',
+  ],
+  [
+    '..............',
+    '..............',
+    '.....VVVV.....',
+    'vvvvVVVVVVvvvv',
+    '.vvVVVVVVVVvv.',
+    '...VVWWVVVV...',
+    '...VVWEVVVV.O.',
+    '...VVVVVVVOOO.',
+    '....VVVVVV.O..',
+    '.....VVVV.....',
+    '.....v..v.....',
+  ],
+];
+
+function drawFlyer(ctx, x, y, w, h, t, dir) {
+  const grid = FLYER[Math.floor(t / 8) % 2];
+  const scale = Math.max(2, Math.round(h / 11));
+  const sw = grid[0].length * scale;
+  const sh = grid.length * scale;
+  drawPixels(ctx, grid, x + w / 2 - sw / 2, y + h / 2 - sh / 2, scale, dir < 0);
+}
+
+
+/* ===== js/sprites/player.js ===== */
+/* ============================================================
+ *  주인공 나율이 도트
+ *  앞머리 단발 + 정수리 꽁지머리(빨간 머리끈) + 분홍 원피스.
+ *  작은 상태 : 28 x 28 도트 (화면에서는 2배 = 56 x 56)
+ *  큰 상태   : 32 x 32 도트 (화면에서는 2배 = 64 x 64)
+ *  타이틀용  : 96 x 96 도트
+ *
+ *  이 그림들은 tools/nayul-gen.js 가 만들어 낸 것입니다. 손으로 고쳐도 되지만,
+ *  생성기를 고치고 다시 뽑으면 세 크기가 항상 같은 모습으로 유지됩니다.
+ *    node tools/nayul-gen.js --size=96 --code
+ *  자세한 규칙은 docs/PIXEL_STYLE.md 를 보세요.
+ * ========================================================== */
+
+const NAYUL = {
+  idle: [
+    '............................',
+    '.............xx.............',
+    '.............xKx............',
+    '............qMMM............',
+    '.........xxxHqqqxxx.........',
+    '........xKHKKKKKKKKx........',
+    '........xKKKKKKKKKKx........',
+    '.......xKKKKKKKKKKKKx.......',
+    '.......xKKKHKKHKKKKKx.......',
+    '.......xKdKHKHSHKHKKx.......',
+    '.......xKddHHsSdqxKKx.......',
+    '.......xKHbdxssdbxHKx.......',
+    '.......xKHxxxssxxxHKx.......',
+    '.......xqsHxHSSHxHsqx.......',
+    '........dCSSsssssssd........',
+    '.........qSSSppsssq.........',
+    '..........dFSSSsSd..........',
+    '.........dSQPCCPQSd.........',
+    '........dSSPPMMPPSSd........',
+    '........dSPPPCCPPpSd........',
+    '.......dSSPPPPPPPpCSd.......',
+    '.......dFPPPPPPPPppFd.......',
+    '.......dqqqqqqqqqqqqd.......',
+    '..........dsd..dsd..........',
+    '..........dSd..dSd..........',
+    '..........bWb..bWb..........',
+    '..........bBBb.bBBb.........',
+    '..........bbb..bbb..........',
+  ],
+  blink: [
+    '............................',
+    '.............xx.............',
+    '.............xKx............',
+    '............qMMM............',
+    '.........xxxHqqqxxx.........',
+    '........xKHKKKKKKKKx........',
+    '........xKKKKKKKKKKx........',
+    '.......xKKKKKKKKKKKKx.......',
+    '.......xKKKHKKHKKKKKx.......',
+    '.......xKdKHHHSHKHKKx.......',
+    '.......xKdHkdsSdkHHKx.......',
+    '.......xKddSdSSqsqdKx.......',
+    '.......xKsSSSSSSssdKx.......',
+    '.......xqCSSSSSSsssqx.......',
+    '........dCSSsssssssd........',
+    '.........qSSSppsssq.........',
+    '..........dFSSSsSd..........',
+    '.........dSQPCCPQSd.........',
+    '........dSSPPMMPPSSd........',
+    '........dSPPPCCPPpSd........',
+    '.......dSSPPPPPPPpCSd.......',
+    '.......dFPPPPPPPPppFd.......',
+    '.......dqqqqqqqqqqqqd.......',
+    '..........dsd..dsd..........',
+    '..........dSd..dSd..........',
+    '..........bWb..bWb..........',
+    '..........bBBb.bBBb.........',
+    '..........bbb..bbb..........',
+  ],
+  walk1: [
+    '............................',
+    '.............xx.............',
+    '.............xKx............',
+    '............qMMM............',
+    '.........xxxHqqqxxx.........',
+    '........xKHKKKKKKKKx........',
+    '........xKKKKKKKKKKx........',
+    '.......xKKKKKKKKKKKKx.......',
+    '.......xKKKHKKHKKKKKx.......',
+    '.......xKdKHKHSHKHKKx.......',
+    '.......xKddHHsSdqxKKx.......',
+    '.......xKHbdxssdbxHKx.......',
+    '.......xKHxxxssxxxHKx.......',
+    '.......xqsHxHSSHxHsqx.......',
+    '........dCSSsssssssd........',
+    '.........qSSSppsssq.........',
+    '..........dFSSSsSd..........',
+    '........ddSQPCCPQSd.........',
+    '.......dSSSPPMMPPSSd........',
+    '......dSSPPPPCCPPpSSd.......',
+    '......dFPPPPPPPPPppSd.......',
+    '.......qPPPPPPPPPppCFd......',
+    '.......qqqqqqqqqqqqqdd......',
+    '.........qsd....dsd.........',
+    '..........dd....dSd.........',
+    '.........bWWb...bWb.........',
+    '.........bbbb..bBBBb........',
+    '................bbb.........',
+  ],
+  walk2: [
+    '..............x.............',
+    '.............xKx............',
+    '.............qHx............',
+    '..........xxxMMMxx..........',
+    '.........xKHKKHKKKx.........',
+    '........xKKKKKKKKKKx........',
+    '.......xKKKKKKKKKKKKx.......',
+    '.......xKKKKKKKKKKKKx.......',
+    '.......xKHKHHKsKKHKKx.......',
+    '.......xKdKkHdSqkkKKx.......',
+    '.......xKqQbxsSbbxHKx.......',
+    '.......xKHHKxssKHxKKx.......',
+    '.......xHdkxkSSkxkdHx.......',
+    '........qCsdsSSsqsCq........',
+    '.........dSSsMMsssd.........',
+    '..........dSSSSssd..........',
+    '.........dSQQSSSQSd.........',
+    '........dSSQPpMPQSSd........',
+    '........dSPPPppPCsSd........',
+    '........dSPPPPPPPpSd........',
+    '.......dFPPPPPPPPpCFd.......',
+    '.......dFppppppppppFd.......',
+    '.......qqqqdqqqqdqqqq.......',
+    '..........dSd..dSd..........',
+    '..........bWWb.bBb..........',
+    '..........bbbb.bBBb.........',
+    '..........bbb..bbbb.........',
+    '............................',
+  ],
+  walk3: [
+    '............................',
+    '.............xx.............',
+    '.............xKx............',
+    '............qMMM............',
+    '.........xxxHqqqxxx.........',
+    '........xKHKKKKKKKKx........',
+    '........xKKKKKKKKKKx........',
+    '.......xKKKKKKKKKKKKx.......',
+    '.......xKKKHKKHKKKKKx.......',
+    '.......xKdKHKHSHKHKKx.......',
+    '.......xKddHHsSdqxKKx.......',
+    '.......xKHbdxssdbxHKx.......',
+    '.......xKHxxxssxxxHKx.......',
+    '.......xqsHxHSSHxHsqx.......',
+    '........dCSSsssssssd........',
+    '.........qSSSppsssq.........',
+    '..........dFSSSsSd..........',
+    '.........dSQPCCPQSd.........',
+    '.........dSPPMMPPSSd........',
+    '........dSPPPCCPPpSd........',
+    '........dSPPPPPPPpSd........',
+    '........dSPPPPPPPppd........',
+    '.......dddqqqqqqqqqqq.......',
+    '...........dsdpsd...........',
+    '...........dSsSSd...........',
+    '...........bWWWWWb..........',
+    '..........bBBBbbbb..........',
+    '...........bbbb.............',
+  ],
+  walk4: [
+    '..............x.............',
+    '.............xKx............',
+    '.............qHx............',
+    '..........xxxMMMxx..........',
+    '.........xKHKKHKKKx.........',
+    '........xKKKKKKKKKKx........',
+    '.......xKKKKKKKKKKKKx.......',
+    '.......xKKKKKKKKKKKKx.......',
+    '.......xKHKHHKsKKHKKx.......',
+    '.......xKdKkHdSqkkKKx.......',
+    '.......xKqQbxsSbbxHKx.......',
+    '.......xKHHKxssKHxKKx.......',
+    '.......xHdkxkSSkxkdHx.......',
+    '........qCsdsSSsqsCq........',
+    '.........dSSsMMsssd.........',
+    '..........dSSSSssd..........',
+    '.........dSQQSSSQSd.........',
+    '........dSSQPpMPQSSd........',
+    '........dSPPPppPCsSd........',
+    '........dSPPPPPPPpSd........',
+    '.......dFPPPPPPPPpCFd.......',
+    '.......dFppppppppppFd.......',
+    '.......qqqqdqqqqdqqqq.......',
+    '..........dSd..dSd..........',
+    '..........bBb..bWWb.........',
+    '..........bBBb.bbbb.........',
+    '..........bbbb.bbb..........',
+    '............................',
+  ],
+  jump: [
+    '............................',
+    '.............xxx............',
+    '.............xHx............',
+    '...........xqMMMx...........',
+    '.........xxKKHHHKxx.........',
+    '........xKKKKKKKKKKx........',
+    '........xKKKKKKKKKKx........',
+    '.......xKKKKKKKKKKKKx.......',
+    '.......xKHKHHKdKKHKKx.......',
+    '.......xKdkkHqSHkKKKx.......',
+    '.......xKdbdksSdbxHKx.......',
+    '.......xKHdHxssqdxKKx.......',
+    '.......xKqxxxssxxxHKx.......',
+    '.....ddspCdKdSSdKqCpsdd.....',
+    '......dSdsSSsppssssdSd......',
+    '.......dSssSSssssssSd.......',
+    '........dSSQFSSSSSSd........',
+    '.........dSQPRpPQSd.........',
+    '.........qPPPpMPPCq.........',
+    '........qPPPPPPPPppq........',
+    '........qPPPPPPPPppq........',
+    '.......dCCCCCCCCCpppq.......',
+    '.......qqqqqqqqqqqqqq.......',
+    '..........dd....dd..........',
+    '.........bWWb...bBb.........',
+    '.........bbbb..bBBb.........',
+    '...............bbbb.........',
+    '............................',
+  ],
+  fall: [
+    '............................',
+    '.............xx.............',
+    '.............xKx............',
+    '............qMMM............',
+    '.........xxxHqqqxxx.........',
+    '........xKHKKKKKKKKx........',
+    '........xKKKKKKKKKKx........',
+    '.......xKKKKKKKKKKKKx.......',
+    '.......xKKKHKKHKKKKKx.......',
+    '.......xKdKHKHSHKHKKx.......',
+    '.......xKddHHsSdqxKKx.......',
+    '.......xKHbdxssdbxHKx.......',
+    '.......xKHxxxssxxxHKx.......',
+    '.......xqsHxHSSHxHsqx.......',
+    '........dCSSSMMSsssd........',
+    '.....ddd.qSSSppsssq.ddd.....',
+    '.....ddSdSSFSSSsSSSdSdd.....',
+    '.......ddSSQPCCPQSSdd.......',
+    '.........qPPPMMPPPd.........',
+    '........qPPPPCCPPppq........',
+    '........qPPPPPPPPppq........',
+    '........qPPPPPPPPppq........',
+    '.......qqqqqqqqqqqqqq.......',
+    '.........qsd....bSd.........',
+    '.........dFd...bWWWb........',
+    '.........bWWb..bbbbb........',
+    '.........bbbb...............',
+    '............................',
+  ],
+  hurt: [
+    '............................',
+    '..............x.............',
+    '.............xKx............',
+    '.............qqq............',
+    '..........xxxMMMxx..........',
+    '.........xHKKKKKKKx.........',
+    '........xKKKKKKKKKKx........',
+    '.......xKKKKKKKKKKKKx.......',
+    '.......xKKKKKKKKKKKKx.......',
+    '.......xKqKHHKsKKHKKx.......',
+    '.......xKdHdddSqdHKKx.......',
+    '.......xKdHdqSSqqKdKx.......',
+    '.......xKsdksSSskqdKx.......',
+    '.......xHsqSqSSqsqpHx.......',
+    '.....ddSpCSSSppSssCpSdd.....',
+    '......dSsdSSSMMSssdsSd......',
+    '.......dSsSSSSSssssSd.......',
+    '........dSSQQPPPQSSd........',
+    '.........dSPPpMPPSd.........',
+    '.........qPPPRRPPpq.........',
+    '........qPPPPPPPPppq........',
+    '........qPPPPPPPPppq........',
+    '.......qppppppppppMMq.......',
+    '.......qqdddqqqqdpdqq.......',
+    '.........dSd.....dd.........',
+    '.........dFd....bFd.........',
+    '........bBBBb...bBBb........',
+    '........bbbbb...bbbb........',
+  ],
+};
+
+/* 하트를 먹어 커진 상태 (32 x 32 도트) */
+const NAYUL_BIG = {
+  idle: [
+    '................................',
+    '...............xxx..............',
+    '...............xKx..............',
+    '...............qHx..............',
+    '............xxqMMMxx............',
+    '..........xxKHKHHHKKxx..........',
+    '.........xKKKKKKKKKKKKx.........',
+    '.........xKKKKKKKKKKKKx.........',
+    '........xKKKKKKKKKKKKKKx........',
+    '........xKKKKHKKHKKKKKKx........',
+    '........xKHHKqKKsHKHKKKx........',
+    '........xKqqKkHdSdKkKKKx........',
+    '........xKqdbKKsSdQHkHKx........',
+    '........xKHHbkkssHbKxHKx........',
+    '........xKqKxxksskxxkHKx........',
+    '.........qsdkkdSSdkkdpq.........',
+    '.........dsCSSssssssspd.........',
+    '..........xSSSsMMssssx..........',
+    '...........dSSSSSSssd...........',
+    '..........dSFQSSSSQFSd..........',
+    '..........dSQPPRpPPSSd..........',
+    '.........dSSPPPMMPPCSSd.........',
+    '.........dSPPPPPPPPpsSd.........',
+    '........dSSPPPPPPPPCpSSd........',
+    '........dFPPPPPPPPPCpCFd........',
+    '........dSpdddddddddqqSd........',
+    '........qqqqdddqqqddqqqq........',
+    '............dSd...dsd...........',
+    '............dSd...dSd...........',
+    '...........bWWWb.bWWb...........',
+    '...........bbbbb.bbbb...........',
+    '...........bbbb..bbbb...........',
+  ],
+  blink: [
+    '................................',
+    '...............xxx..............',
+    '...............xKx..............',
+    '...............qHx..............',
+    '............xxqMMMxx............',
+    '..........xxKHKHHHKKxx..........',
+    '.........xKKKKKKKKKKKKx.........',
+    '.........xKKKKKKKKKKKKx.........',
+    '........xKKKKKKKKKKKKKKx........',
+    '........xKKKKHKKHKKKKKKx........',
+    '........xKHHKqKKsHKHKKKx........',
+    '........xKqqKHddSdHKHKKx........',
+    '........xKqdHHdSSdHHHHKx........',
+    '........xKqsSSsSSsSsdHKx........',
+    '........xKdSSSSSSSsssqKx........',
+    '.........qsCSSSSSSssspq.........',
+    '.........dsCSSssssssspd.........',
+    '..........xSSSsMMssssx..........',
+    '...........dSSSSSSssd...........',
+    '..........dSFQSSSSQFSd..........',
+    '..........dSQPPRpPPSSd..........',
+    '.........dSSPPPMMPPCSSd.........',
+    '.........dSPPPPPPPPpsSd.........',
+    '........dSSPPPPPPPPCpSSd........',
+    '........dFPPPPPPPPPCpCFd........',
+    '........dSpdddddddddqqSd........',
+    '........qqqqdddqqqddqqqq........',
+    '............dSd...dsd...........',
+    '............dSd...dSd...........',
+    '...........bWWWb.bWWb...........',
+    '...........bbbbb.bbbb...........',
+    '...........bbbb..bbbb...........',
+  ],
+  walk1: [
+    '................................',
+    '...............xxx..............',
+    '...............xKx..............',
+    '...............qHx..............',
+    '............xxqMMMxx............',
+    '..........xxKHKHHHKKxx..........',
+    '.........xKKKKKKKKKKKKx.........',
+    '.........xKKKKKKKKKKKKx.........',
+    '........xKKKKKKKKKKKKKKx........',
+    '........xKKKKHKKHKKKKKKx........',
+    '........xKHHKqKKsHKHKKKx........',
+    '........xKqqKkHdSdKkKKKx........',
+    '........xKqdbKKsSdQHkHKx........',
+    '........xKHHbkkssHbKxHKx........',
+    '........xKqKxxksskxxkHKx........',
+    '.........qsdkkdSSdkkdpq.........',
+    '.........dsCSSssssssspd.........',
+    '..........xSSSsMMssssx..........',
+    '...........dSSSSSSssd...........',
+    '..........dSFQSSSSQFSd..........',
+    '.........dSSQPPRpPPQSd..........',
+    '........dSSSPPPMMPPCSSd.........',
+    '.......dFSPPPPPPPPPppSSd........',
+    '.......dFPPPPPPPPPPCpCSd........',
+    '........qPPPPPPPPPPCppSFd.......',
+    '........qdddddddddddqqpFd.......',
+    '........qqqdddqqqqqddqqd........',
+    '...........dSd.....dd...........',
+    '...........dFd....dFSd..........',
+    '..........bWWWb...bWWb..........',
+    '..........bbbbb...bbbb..........',
+    '..................bbbb..........',
+  ],
+  walk2: [
+    '................x...............',
+    '...............xKx..............',
+    '...............xHx..............',
+    '.............xMMMMx.............',
+    '...........xxKHqqqHxx...........',
+    '..........xKKKKKKKKKKx..........',
+    '.........xKKKKKKKKKKKKx.........',
+    '........xKKKKKKKKKKKKKKx........',
+    '........xKKKKKKKKKKKKKKx........',
+    '........xKHKKdKKdKKHKKKx........',
+    '........xKqHkKHqSdKKKKKx........',
+    '........xKqdbKHsSdbKkHKx........',
+    '........xKHdbKkssqbHkHKx........',
+    '........xKHkkxksskkxkHKx........',
+    '........xHdqkkHSSHkkqdHx........',
+    '.........dCCddsSSsddCCd.........',
+    '..........dSSSsMMpsssq..........',
+    '...........dSSSSSSssd...........',
+    '..........dSFFSSSSSFSd..........',
+    '..........dSFPPRpPPFSd..........',
+    '..........dSPPPpMPPPSd..........',
+    '.........dSSPPPCCPPpCSd.........',
+    '.........dSPPPPPPPPCpSd.........',
+    '........dFSPPPPPPPPCpSFd........',
+    '........dFCppppppppppsFd........',
+    '........qqqqqqqqqqqqqqqq........',
+    '............dSd...dsd...........',
+    '............dFd...dSd...........',
+    '...........bBBBb.bWWb...........',
+    '...........bbbbb.bbbb...........',
+    '.................bbbb...........',
+    '................................',
+  ],
+  walk3: [
+    '................................',
+    '...............xxx..............',
+    '...............xKx..............',
+    '...............qHx..............',
+    '............xxqMMMxx............',
+    '..........xxKHKHHHKKxx..........',
+    '.........xKKKKKKKKKKKKx.........',
+    '.........xKKKKKKKKKKKKx.........',
+    '........xKKKKKKKKKKKKKKx........',
+    '........xKKKKHKKHKKKKKKx........',
+    '........xKHHKqKKsHKHKKKx........',
+    '........xKqqKkHdSdKkKKKx........',
+    '........xKqdbKKsSdQHkHKx........',
+    '........xKHHbkkssHbKxHKx........',
+    '........xKqKxxksskxxkHKx........',
+    '.........qsdkkdSSdkkdpq.........',
+    '.........dsCSSssssssspd.........',
+    '..........xSSSsMMssssx..........',
+    '...........dSSSSSSssd...........',
+    '..........dSFQSSSSQFSd..........',
+    '..........dSSPPRpPPSSd..........',
+    '..........dSPPPMMPPCSSd.........',
+    '.........dSSPPPPPPPpCFd.........',
+    '.........dSSPPPPPPPCCFd.........',
+    '.........dFPPPPPPPPCpCd.........',
+    '........qFFpddddddddqqqq........',
+    '........qddqqdddqddqqqqq........',
+    '.............dSd.dd.............',
+    '.............dSSbFFd............',
+    '............bWWWWBWb............',
+    '............bbbbbbbb............',
+    '............bbbbb...............',
+  ],
+  walk4: [
+    '................x...............',
+    '...............xKx..............',
+    '...............xHx..............',
+    '.............xMMMMx.............',
+    '...........xxKHqqqHxx...........',
+    '..........xKKKKKKKKKKx..........',
+    '.........xKKKKKKKKKKKKx.........',
+    '........xKKKKKKKKKKKKKKx........',
+    '........xKKKKKKKKKKKKKKx........',
+    '........xKHKKdKKdKKHKKKx........',
+    '........xKqHkKHqSdKKKKKx........',
+    '........xKqdbKHsSdbKkHKx........',
+    '........xKHdbKkssqbHkHKx........',
+    '........xKHkkxksskkxkHKx........',
+    '........xHdqkkHSSHkkqdHx........',
+    '.........dCCddsSSsddCCd.........',
+    '..........dSSSsMMpsssq..........',
+    '...........dSSSSSSssd...........',
+    '..........dSFFSSSSSFSd..........',
+    '..........dSFPPRpPPFSd..........',
+    '..........dSPPPpMPPPSd..........',
+    '.........dSSPPPCCPPpCSd.........',
+    '.........dSPPPPPPPPCpSd.........',
+    '........dFSPPPPPPPPCpSFd........',
+    '........dFCppppppppppsFd........',
+    '........qqqqqqqqqqqqqqqq........',
+    '............dSd...dsd...........',
+    '............dFd..bFFd...........',
+    '...........bWWWb.bBBb...........',
+    '...........bbbbb.bbbb...........',
+    '...........bbbb.................',
+    '................................',
+  ],
+  jump: [
+    '................................',
+    '...............xxx..............',
+    '...............xKx..............',
+    '..............MMMM..............',
+    '...........xxxqMMMxxx...........',
+    '..........xKKKKKKKKKKx..........',
+    '.........xKKKKKKKKKKKKx.........',
+    '.........xKKKKKKKKKKKKx.........',
+    '........xKKKKKKKKKKKKKKx........',
+    '........xKKKKHKKHKKHKKKx........',
+    '........xKqHKHKHSHKHKKKx........',
+    '........xKqqqkHsSddkkKKx........',
+    '........xKqdBKkssqBHkHKx........',
+    '........xKHKHkkssKHkxHKx........',
+    '.......dHKqHxxKSSKxxKqKHd.......',
+    '......dFsdCsHHsSSsHHssdsFd......',
+    '......dFSssSSSpsspssspsSFd......',
+    '.......dSSssSSSspSssssSSd.......',
+    '........dSSSFSSSSSsSSSSd........',
+    '.........dSSFQPCCPQFSSd.........',
+    '..........dSQPPpMPPSSd..........',
+    '..........qPPPPppPPppq..........',
+    '.........qPPPPPPPPPpppq.........',
+    '.........qPPPPPPPPPCppq.........',
+    '.........qPPPPPPPPPCppq.........',
+    '........qqqqqqqqqqqqqqqq........',
+    '...........dsd....dsd...........',
+    '...........bWBb...dFd...........',
+    '..........bBBBb..bWWWb..........',
+    '..........bbbbb..bbbbb..........',
+    '..................bbbb..........',
+    '................................',
+  ],
+  fall: [
+    '................................',
+    '...............xxx..............',
+    '...............xKx..............',
+    '...............qHx..............',
+    '............xxqMMMxx............',
+    '..........xxKHKHHHKKxx..........',
+    '.........xKKKKKKKKKKKKx.........',
+    '.........xKKKKKKKKKKKKx.........',
+    '........xKKKKKKKKKKKKKKx........',
+    '........xKKKKHKKHKKKKKKx........',
+    '........xKHHKqKKsHKHKKKx........',
+    '........xKqqKkHdSdKkKKKx........',
+    '........xKqdbKKsSdQHkHKx........',
+    '........xKHHbkkssHbKxHKx........',
+    '........xKqKxxksskxxkHKx........',
+    '.........qsdkkdSSdkkdpq.........',
+    '.........dsCSSSMMSssspd.........',
+    '......ddd.xSSSSMMSsssx.ddd......',
+    '......dFSdSsSSSSSSssdSdSFd......',
+    '.......ddSSSFQSSSSQFSSSdd.......',
+    '.........dSSQPPRpPPQSSd.........',
+    '..........qPPPPMMPPCpq..........',
+    '..........qPPPPPPPPppq..........',
+    '.........qPPPPPPPPPCppq.........',
+    '.........qPPPPPPPPPCppq.........',
+    '........qdddddddddddqqqq........',
+    '........qqqdddqqqqdpdqqq........',
+    '...........dSd....bBBb..........',
+    '..........bWWb....bBBb..........',
+    '..........bBBBb...bbbb..........',
+    '..........bbbbb.................',
+    '................................',
+  ],
+  hurt: [
+    '................................',
+    '................x...............',
+    '...............xKx..............',
+    '...............xHx..............',
+    '.............xqMMMx.............',
+    '...........xxKHrrrHxx...........',
+    '..........xKHKKKKKKKKx..........',
+    '.........xKKKKKKKKKKKKx.........',
+    '........xKKKKKKKKKKKKKKx........',
+    '........xKKKKKKKKKKKKKKx........',
+    '........xKHKKdKKdKKHKKKx........',
+    '........xKqHHHHqSdHHKKKx........',
+    '........xKqqdsdsSdddHHKx........',
+    '........xKqsKKsSSsKKdHKx........',
+    '........xKqsKKsSSsKKdqKx........',
+    '........xHddssdSSdddddHx........',
+    '......ddSdCCSSSppSssCCdSdd......',
+    '......dFSsdSSSSMMSsssdsSFd......',
+    '.......dSSsdSSSssSssdsSSd.......',
+    '........ddSSFFSSSSSSSSdd........',
+    '..........dSFPPCpPPFSd..........',
+    '..........qSQPPMMPPPCq..........',
+    '..........qPPPPCCPPppq..........',
+    '.........qPPPPPPPPPCppq.........',
+    '.........qPPPPPPPPPCppq.........',
+    '........qCCCCCCCCCCppppq........',
+    '........qqqqqqqqqqqqqqqq........',
+    '..........dSsd.....dsd..........',
+    '...........dd......dSd..........',
+    '..........bWWb....bWWb..........',
+    '..........bBBb....bBBBb.........',
+    '..........bbbb....bbbbb.........',
+  ],
+};
+
+/* 타이틀 화면용 큰 그림 (96 x 96 도트) */
+const NAYUL96 = {
+  idle: [
+    '................................................................................................',
+    '................................................................................................',
+    '................................................................................................',
+    '................................................xxxx............................................',
+    '..............................................xxKKKKx...........................................',
+    '..............................................xKKKKKx...........................................',
+    '.............................................xKKKKKKKx..........................................',
+    '.............................................xKKKKKKKx..........................................',
+    '.............................................xKKKKKKKx..........................................',
+    '.............................................xKKKKKKkx..........................................',
+    '.............................................xHHHHHHKx..........................................',
+    '............................................rrrrrrrrrr..........................................',
+    '........................................xxxrRRRRRRRRRRrx........................................',
+    '....................................xxxxkkHrRRRRRRRRRRrHxxxx....................................',
+    '..................................xxKKKKkKKrrrrrrrrrrrrKkkKKxx..................................',
+    '.................................xKKKKKKKKKHrrrrrrrrrqHKKkKKKKxx................................',
+    '...............................xxkKKKHHHKKKKKKKKKkKKKKKKKkKKKKKkx...............................',
+    '..............................xKKKKHHHHHKKKKKKKKKkKKKKKKKkKKKKKKkx..............................',
+    '.............................xKKKKHHHHHKKKKKKKKKKkKKKKKKKkKKKKKKkKx.............................',
+    '............................xKKKKKHHHKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKx............................',
+    '...........................xKKKKKKKKKKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKKx...........................',
+    '...........................xKKKKkKKKKKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKKx...........................',
+    '..........................xKKKKKkKKKKKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKKKx..........................',
+    '..........................xKKKKKkKKKKKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKKKx..........................',
+    '.........................xKKKKKKkKKKKKKKkKKKKKKKKkkKKKKKKkKKKKKKkKKKKKx.........................',
+    '.........................xKKKKKKkKKKKKKKkKKKKKKKKkkKKKKKKkKKKKKKkKKKKKx.........................',
+    '.........................xKKKKKKkKKKKKKKkKKKKKKKKkkKKKKKKkKKKKKKkkKKKKx.........................',
+    '........................xKKKKKKkkKKKKKKkkKKKKKKKKKKKKKKKKkkKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKKKKKKKKkkKKKKKKKKKKKKKKKKkkKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKKKKKKKKkHHKKKKKKKdqKKKKKKkkKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKdKKKKKKHssKKKKKKHssHKKKKKKHHKKKKKKKKKKKx........................',
+    '........................xKKKKKKKsHKKKKHsSsHKKKKKdSSqKKKKKHsdKKKKKKKKKKKx........................',
+    '........................xKKKKKKKSdKKKKHHKKKKKKKHSSSsKKKKKHddHKKKKKKKKKKx........................',
+    '........................xKKKKKKKSsKKKKKKKKHHKKHsSSSSqKKKKKKKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKSSHKHHHHdsssKKdSSSSSsHKHHHHHHKKKKKKKKKKx........................',
+    '........................xKKKKKKKSSsdqHKKHsSSqHSSSSSSSqKKKKKdddKKKKKKKKKx........................',
+    '........................xKKKKKKKSSSsqqKxxksSssSSSSSSSdHqKxxxdsHHKKKKKKKx........................',
+    '........................xKKKKKKKSSsbBWbkxxKsSSSSSSSSsbBWbkxxkdddKKKKKKKx........................',
+    '........................xKKKKKKKSSdbWWBKxxxdSSSSSSSSdbWWBKxxxqssKKKKKKKx........................',
+    '........................xKKKKKKKSSHqWWbkxxxHSSSSSSSSHqWWbkxxxKssKKKKKKKx........................',
+    '........................xKKKKKKKSSkxKHxxxxxkSSSSSSSSkxKHxxxxxkssKKKKKKKx........................',
+    '........................xKKKKKKKSSkxxxxxxxxkSSSSSSSSkxxxxxxxxkssKKKKKKKx........................',
+    '........................xKKKKKKKSSHxxxxxqqxHSSSSSSSSKxxxxxqqxKssKKKKKKKx........................',
+    '.........................xKKKKKKSSdxxxxxBBkdSSSSSSSSdxxxxxBBxqssKKKKKKx.........................',
+    '.........................xKKKKKKSSsKxxxxHHKsSSSSSSSSsKxxxxHHkdssKKKKKKx.........................',
+    '.........................xKKKHdpCCSskxxxxksSSSSSSSSSSskxxxxkdsCCpdHKKKx.........................',
+    '..........................xKqpssCCCSsHKKHsSSSSSSSSSSSSsHKKHdsCCCsspqKx..........................',
+    '..........................xHssssCCCCSSSSSSSSSSSSSSSSSSSsssssCCCCssspHx..........................',
+    '...........................xssssCCCCSSSSSSSSSSSSSSSSSSssssssCCCCssspx...........................',
+    '...........................xqpssCCCSSSSSSSSSpsSSSSspSSsssssssCCCsspq............................',
+    '............................xHdpCCSSSSSSSSSsMMsSSsMMsSssssssssCCpdHx............................',
+    '.............................xKHSSSSSSSSSSSSsMMMMMMsSSssssssssssHKx.............................',
+    '..............................xKdSSSSSSSSSSSSspMMpsSSssssssssssdKx..............................',
+    '...............................xxdSSSSSSSSSSSSSSSSSSSsssssssssdxx...............................',
+    '.................................xqsSSSSSSSSSSSSSSSSSssssssssqx.................................',
+    '..................................xHFSSSSSSSSSSSSSSSSssssssSHx..................................',
+    '.................................dPPWBFSSSSSSSSSSSSSsssssSFBpsd.................................',
+    '...............................ddSSSFBBBQFSSSSSSSSSSssSQBBBFSSSdd...............................',
+    '...............................dSSSSSQBBBBBBBBBBBBBBBBBBBBQSSSSSd...............................',
+    '..............................dSSSSSSQQQPPPPPPPPPPPPPPPPQQQSSSSSSd..............................',
+    '..............................dSSSSSSQQQPPPPPPRMMpPPPPPPQQQSSSSSSd..............................',
+    '.............................dSSSSSSSQQQPPPPPpRRrrpPPPPPQQQSSSSSSSd.............................',
+    '.............................dSSSSSSSQQPPPPPCMRRrrMCPPPPPQQSSSSSSSd.............................',
+    '............................dSSSSSSSQQPPPPPPCMrrrrMCPPPPPPQQSSSSSSSd............................',
+    '............................dSSSSSSSPPPPPPPPPprrrrpPPPPPPCppCSSSSSSd............................',
+    '...........................dSSSSSSSPPPPPPPPPPPpMMpPPPPPPPCpppSSSSSSSd...........................',
+    '...........................dSSSSSSSPPPPPPPPPPPPPPPPPPPPPPCpppCSSSSSSd...........................',
+    '..........................dSSSSSSSPPPPPPPPPPPPPPPPPPPPPPPPppppSSSSSSSd..........................',
+    '..........................dSSSSSSSPPPPPPPPPPPPPPPPPPPPPPPPppppCSSSSSSd..........................',
+    '.........................dSSSSSSSPPPPPPPPPPPPPPPPPPPPPPPPPCppppSSSSSSSd.........................',
+    '.........................dSSSSSSSPPPPQQPPPPPPPPPPPPPPPPPPQQppppCSSSSSSd.........................',
+    '........................dFFFFFSSPPPPPQQPPPPPPPPPPPPPPPPPPQQpppppSSFFFFFd........................',
+    '........................dFFFFFSSPPPPPPPPPPPPPPPPPPPPPPPPPPPpppppCSFFFFFd........................',
+    '.......................dFFFFFFFPPPPPPPPPPPPPPPPQQPPPPPPPPPPppppppSFFFFFFd.......................',
+    '.......................dFFFFFFFPPPPPPPPPPPPPPPPQQPPPPPPPPPPppppppSFFFFFFd.......................',
+    '........................dFFFFFPPPPPPPPPPPPPPPPPPPPPPPPPPPPPppppppCFFFFFd........................',
+    '........................dFFFFsqqqqqqqqqqqpQQpqqqqqqpQQpqqqqqqqqqqqsFFFFd........................',
+    '........................qdssdqqqqqqqqqqqqpQQdqqqqqqpQQpqqqqqqqqqqqqdssdq........................',
+    '........................qqqqqqqqqqqqqqqqqqppqqqqqqqqppqqqqqqqqqqqqqqqqqq........................',
+    '.........................qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq.........................',
+    '....................................dSSSSssd.........dSSSSssd...................................',
+    '....................................dSSSSssd.........dSSSSssd...................................',
+    '....................................dSSSSssd.........dSSSSssd...................................',
+    '....................................dSSSSssd.........dSSSSssd...................................',
+    '....................................dSSSSssd.........dSSSSssd...................................',
+    '....................................dSSSSssd.........dSSSSssd...................................',
+    '...................................bWWWWWWWWb.......bWWWWWWWWb..................................',
+    '..................................bWWWWWWWWWWb.....bWWWWWWWWWWb.................................',
+    '.................................bWWWWWWWWWWWWb...bWWWWWWWWWWWWb................................',
+    '.................................bWWWWWWWWWWWWb...bWWWWWWWWWWWWb................................',
+    '.................................bWBBBBBBBBBBWb...bWBBBBBBBBBBWb................................',
+    '.................................bbbbbbbbbbbbbb...bbbbbbbbbbbbbb................................',
+    '.................................bbbbbbbbbbbbbb...bbbbbbbbbbbbbb................................',
+    '.................................bbbbbbbbbbbbbb...bbbbbbbbbbbbbb................................',
+    '..................................bbbbbbbbbbbb.....bbbbbbbbbbbb.................................',
+    '................................................................................................',
+  ],
+  blink: [
+    '................................................................................................',
+    '................................................................................................',
+    '................................................................................................',
+    '................................................xxxx............................................',
+    '..............................................xxKKKKx...........................................',
+    '..............................................xKKKKKx...........................................',
+    '.............................................xKKKKKKKx..........................................',
+    '.............................................xKKKKKKKx..........................................',
+    '.............................................xKKKKKKKx..........................................',
+    '.............................................xKKKKKKkx..........................................',
+    '.............................................xHHHHHHKx..........................................',
+    '............................................rrrrrrrrrr..........................................',
+    '........................................xxxrRRRRRRRRRRrx........................................',
+    '....................................xxxxkkHrRRRRRRRRRRrHxxxx....................................',
+    '..................................xxKKKKkKKrrrrrrrrrrrrKkkKKxx..................................',
+    '.................................xKKKKKKKKKHrrrrrrrrrqHKKkKKKKxx................................',
+    '...............................xxkKKKHHHKKKKKKKKKkKKKKKKKkKKKKKkx...............................',
+    '..............................xKKKKHHHHHKKKKKKKKKkKKKKKKKkKKKKKKkx..............................',
+    '.............................xKKKKHHHHHKKKKKKKKKKkKKKKKKKkKKKKKKkKx.............................',
+    '............................xKKKKKHHHKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKx............................',
+    '...........................xKKKKKKKKKKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKKx...........................',
+    '...........................xKKKKkKKKKKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKKx...........................',
+    '..........................xKKKKKkKKKKKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKKKx..........................',
+    '..........................xKKKKKkKKKKKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKKKx..........................',
+    '.........................xKKKKKKkKKKKKKKkKKKKKKKKkkKKKKKKkKKKKKKkKKKKKx.........................',
+    '.........................xKKKKKKkKKKKKKKkKKKKKKKKkkKKKKKKkKKKKKKkKKKKKx.........................',
+    '.........................xKKKKKKkKKKKKKKkKKKKKKKKkkKKKKKKkKKKKKKkkKKKKx.........................',
+    '........................xKKKKKKkkKKKKKKkkKKKKKKKKKKKKKKKKkkKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKKKKKKKKkkKKKKKKKKKKKKKKKKkkKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKKKKKKKKkHHKKKKKKKdqKKKKKKkkKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKdKKKKKKHssKKKKKKHssHKKKKKKHHKKKKKKKKKKKx........................',
+    '........................xKKKKKKKsHKKKKHsSsHKKKKKdSSqKKKKKHsdKKKKKKKKKKKx........................',
+    '........................xKKKKKKKSdKKKKHHKKKKKKKHSSSsKKKKKHddHKKKKKKKKKKx........................',
+    '........................xKKKKKKKSsKKKKKKKKHHKKHsSSSSqKKKKKKKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKSSHKHHHqdsssKKdSSSSSsHKHqHHHHKKKKKKKKKKx........................',
+    '........................xKKKKKKKSSsdqHHHqsSSqHSSSSSSSHKHHHHdddKKKKKKKKKx........................',
+    '........................xKKKKKKKSSSqxxxxxxdSssSSSSSSSHxxxxxxqsHHKKKKKKKx........................',
+    '........................xKKKKKKKSSqxxxKHxxxdSSSSSSSSqxxxKKxxxqddKKKKKKKx........................',
+    '........................xKKKKKKKSsxxKsSSsKxxsSSSSSSsxxKsSsdKxxdsKKKKKKKx........................',
+    '........................xKKKKKKKSsxksSSSSskksSSSSSSsxksSSssdkkdsKKKKKKKx........................',
+    '........................xKKKKKKKSSssSSSSSSssSSSSSSSSssSSssssssssKKKKKKKx........................',
+    '........................xKKKKKKKSSSSSSSSSSSSSSSSSSSSSSSSssssssssKKKKKKKx........................',
+    '........................xKKKKKKKSSSSSSSSSSSSSSSSSSSSSSSSssssssssKKKKKKKx........................',
+    '.........................xKKKKKKSSSSSSSSSSSSSSSSSSSSSSSSssssssssKKKKKKx.........................',
+    '.........................xKKKKKKSSSSSSSSSSSSSSSSSSSSSSSsssssssssKKKKKKx.........................',
+    '.........................xKKKHdpCCSSSSSSSSSSSSSSSSSSSSSsssssssCCpdHKKKx.........................',
+    '..........................xKqpssCCCSSSSSSSSSSSSSSSSSSSSssssssCCCsspqKx..........................',
+    '..........................xHssssCCCCSSSSSSSSSSSSSSSSSSSsssssCCCCssspHx..........................',
+    '...........................xssssCCCCSSSSSSSSSSSSSSSSSSssssssCCCCssspx...........................',
+    '...........................xqpssCCCSSSSSSSSSpsSSSSspSSsssssssCCCsspq............................',
+    '............................xHdpCCSSSSSSSSSsMMsSSsMMsSssssssssCCpdHx............................',
+    '.............................xKHSSSSSSSSSSSSsMMMMMMsSSssssssssssHKx.............................',
+    '..............................xKdSSSSSSSSSSSSspMMpsSSssssssssssdKx..............................',
+    '...............................xxdSSSSSSSSSSSSSSSSSSSsssssssssdxx...............................',
+    '.................................xqsSSSSSSSSSSSSSSSSSssssssssqx.................................',
+    '..................................xHFSSSSSSSSSSSSSSSSssssssSHx..................................',
+    '.................................dPPWBFSSSSSSSSSSSSSsssssSFBpsd.................................',
+    '...............................ddSSSFBBBQFSSSSSSSSSSssSQBBBFSSSdd...............................',
+    '...............................dSSSSSQBBBBBBBBBBBBBBBBBBBBQSSSSSd...............................',
+    '..............................dSSSSSSQQQPPPPPPPPPPPPPPPPQQQSSSSSSd..............................',
+    '..............................dSSSSSSQQQPPPPPPRMMpPPPPPPQQQSSSSSSd..............................',
+    '.............................dSSSSSSSQQQPPPPPpRRrrpPPPPPQQQSSSSSSSd.............................',
+    '.............................dSSSSSSSQQPPPPPCMRRrrMCPPPPPQQSSSSSSSd.............................',
+    '............................dSSSSSSSQQPPPPPPCMrrrrMCPPPPPPQQSSSSSSSd............................',
+    '............................dSSSSSSSPPPPPPPPPprrrrpPPPPPPCppCSSSSSSd............................',
+    '...........................dSSSSSSSPPPPPPPPPPPpMMpPPPPPPPCpppSSSSSSSd...........................',
+    '...........................dSSSSSSSPPPPPPPPPPPPPPPPPPPPPPCpppCSSSSSSd...........................',
+    '..........................dSSSSSSSPPPPPPPPPPPPPPPPPPPPPPPPppppSSSSSSSd..........................',
+    '..........................dSSSSSSSPPPPPPPPPPPPPPPPPPPPPPPPppppCSSSSSSd..........................',
+    '.........................dSSSSSSSPPPPPPPPPPPPPPPPPPPPPPPPPCppppSSSSSSSd.........................',
+    '.........................dSSSSSSSPPPPQQPPPPPPPPPPPPPPPPPPQQppppCSSSSSSd.........................',
+    '........................dFFFFFSSPPPPPQQPPPPPPPPPPPPPPPPPPQQpppppSSFFFFFd........................',
+    '........................dFFFFFSSPPPPPPPPPPPPPPPPPPPPPPPPPPPpppppCSFFFFFd........................',
+    '.......................dFFFFFFFPPPPPPPPPPPPPPPPQQPPPPPPPPPPppppppSFFFFFFd.......................',
+    '.......................dFFFFFFFPPPPPPPPPPPPPPPPQQPPPPPPPPPPppppppSFFFFFFd.......................',
+    '........................dFFFFFPPPPPPPPPPPPPPPPPPPPPPPPPPPPPppppppCFFFFFd........................',
+    '........................dFFFFsqqqqqqqqqqqpQQpqqqqqqpQQpqqqqqqqqqqqsFFFFd........................',
+    '........................qdssdqqqqqqqqqqqqpQQdqqqqqqpQQpqqqqqqqqqqqqdssdq........................',
+    '........................qqqqqqqqqqqqqqqqqqppqqqqqqqqppqqqqqqqqqqqqqqqqqq........................',
+    '.........................qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq.........................',
+    '....................................dSSSSssd.........dSSSSssd...................................',
+    '....................................dSSSSssd.........dSSSSssd...................................',
+    '....................................dSSSSssd.........dSSSSssd...................................',
+    '....................................dSSSSssd.........dSSSSssd...................................',
+    '....................................dSSSSssd.........dSSSSssd...................................',
+    '....................................dSSSSssd.........dSSSSssd...................................',
+    '...................................bWWWWWWWWb.......bWWWWWWWWb..................................',
+    '..................................bWWWWWWWWWWb.....bWWWWWWWWWWb.................................',
+    '.................................bWWWWWWWWWWWWb...bWWWWWWWWWWWWb................................',
+    '.................................bWWWWWWWWWWWWb...bWWWWWWWWWWWWb................................',
+    '.................................bWBBBBBBBBBBWb...bWBBBBBBBBBBWb................................',
+    '.................................bbbbbbbbbbbbbb...bbbbbbbbbbbbbb................................',
+    '.................................bbbbbbbbbbbbbb...bbbbbbbbbbbbbb................................',
+    '.................................bbbbbbbbbbbbbb...bbbbbbbbbbbbbb................................',
+    '..................................bbbbbbbbbbbb.....bbbbbbbbbbbb.................................',
+    '................................................................................................',
+  ],
+  walk1: [
+    '................................................................................................',
+    '................................................................................................',
+    '................................................................................................',
+    '................................................xxxx............................................',
+    '..............................................xxKKKKx...........................................',
+    '..............................................xKKKKKx...........................................',
+    '.............................................xKKKKKKKx..........................................',
+    '.............................................xKKKKKKKx..........................................',
+    '.............................................xKKKKKKKx..........................................',
+    '.............................................xKKKKKKkx..........................................',
+    '.............................................xHHHHHHKx..........................................',
+    '............................................rrrrrrrrrr..........................................',
+    '........................................xxxrRRRRRRRRRRrx........................................',
+    '....................................xxxxkkHrRRRRRRRRRRrHxxxx....................................',
+    '..................................xxKKKKkKKrrrrrrrrrrrrKkkKKxx..................................',
+    '.................................xKKKKKKKKKHrrrrrrrrrqHKKkKKKKxx................................',
+    '...............................xxkKKKHHHKKKKKKKKKkKKKKKKKkKKKKKkx...............................',
+    '..............................xKKKKHHHHHKKKKKKKKKkKKKKKKKkKKKKKKkx..............................',
+    '.............................xKKKKHHHHHKKKKKKKKKKkKKKKKKKkKKKKKKkKx.............................',
+    '............................xKKKKKHHHKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKx............................',
+    '...........................xKKKKKKKKKKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKKx...........................',
+    '...........................xKKKKkKKKKKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKKx...........................',
+    '..........................xKKKKKkKKKKKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKKKx..........................',
+    '..........................xKKKKKkKKKKKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKKKx..........................',
+    '.........................xKKKKKKkKKKKKKKkKKKKKKKKkkKKKKKKkKKKKKKkKKKKKx.........................',
+    '.........................xKKKKKKkKKKKKKKkKKKKKKKKkkKKKKKKkKKKKKKkKKKKKx.........................',
+    '.........................xKKKKKKkKKKKKKKkKKKKKKKKkkKKKKKKkKKKKKKkkKKKKx.........................',
+    '........................xKKKKKKkkKKKKKKkkKKKKKKKKKKKKKKKKkkKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKKKKKKKKkkKKKKKKKKKKKKKKKKkkKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKKKKKKKKkHHKKKKKKKdqKKKKKKkkKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKdKKKKKKHssKKKKKKHssHKKKKKKHHKKKKKKKKKKKx........................',
+    '........................xKKKKKKKsHKKKKHsSsHKKKKKdSSqKKKKKHsdKKKKKKKKKKKx........................',
+    '........................xKKKKKKKSdKKKKHHKKKKKKKHSSSsKKKKKHddHKKKKKKKKKKx........................',
+    '........................xKKKKKKKSsKKKKKKKKHHKKHsSSSSqKKKKKKKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKSSHKHHHHdsssKKdSSSSSsHKHHHHHHKKKKKKKKKKx........................',
+    '........................xKKKKKKKSSsdqHKKHsSSqHSSSSSSSqKKKKKdddKKKKKKKKKx........................',
+    '........................xKKKKKKKSSSsqqKxxksSssSSSSSSSdHqKxxxdsHHKKKKKKKx........................',
+    '........................xKKKKKKKSSsbBWbkxxKsSSSSSSSSsbBWbkxxkdddKKKKKKKx........................',
+    '........................xKKKKKKKSSdbWWBKxxxdSSSSSSSSdbWWBKxxxqssKKKKKKKx........................',
+    '........................xKKKKKKKSSHqWWbkxxxHSSSSSSSSHqWWbkxxxKssKKKKKKKx........................',
+    '........................xKKKKKKKSSkxKHxxxxxkSSSSSSSSkxKHxxxxxkssKKKKKKKx........................',
+    '........................xKKKKKKKSSkxxxxxxxxkSSSSSSSSkxxxxxxxxkssKKKKKKKx........................',
+    '........................xKKKKKKKSSHxxxxxqqxHSSSSSSSSKxxxxxqqxKssKKKKKKKx........................',
+    '.........................xKKKKKKSSdxxxxxBBkdSSSSSSSSdxxxxxBBxqssKKKKKKx.........................',
+    '.........................xKKKKKKSSsKxxxxHHKsSSSSSSSSsKxxxxHHkdssKKKKKKx.........................',
+    '.........................xKKKHdpCCSskxxxxksSSSSSSSSSSskxxxxkdsCCpdHKKKx.........................',
+    '..........................xKqpssCCCSsHKKHsSSSSSSSSSSSSsHKKHdsCCCsspqKx..........................',
+    '..........................xHssssCCCCSSSSSSSSSSSSSSSSSSSsssssCCCCssspHx..........................',
+    '...........................xssssCCCCSSSSSSSSSSSSSSSSSSssssssCCCCssspx...........................',
+    '...........................xqpssCCCSSSSSSSSSpsSSSSspSSsssssssCCCsspq............................',
+    '............................xHdpCCSSSSSSSSSsMMsSSsMMsSssssssssCCpdHx............................',
+    '.............................xKHSSSSSSSSSSSSsMMMMMMsSSssssssssssHKx.............................',
+    '..............................xKdSSSSSSSSSSSSspMMpsSSssssssssssdKx..............................',
+    '...............................xxdSSSSSSSSSSSSSSSSSSSsssssssssdxx...............................',
+    '.................................xqsSSSSSSSSSSSSSSSSSssssssssqx.................................',
+    '..................................xHFSSSSSSSSSSSSSSSSssssssSHx..................................',
+    '.................................dPPWBFSSSSSSSSSSSSSsssssSFBpsd.................................',
+    '...............................ddSSSFBBBQFSSSSSSSSSSssSQBBBFSSSd................................',
+    '..............................dSSSSSSQBBBBBBBBBBBBBBBBBBBBQSSSSSd...............................',
+    '.............................dSSSSSSSQQQPPPPPPPPPPPPPPPPQQQSSSSSSd..............................',
+    '............................dSSSSSSSSQQQPPPPPPRMMpPPPPPPQQQSSSSSSSd.............................',
+    '...........................dSSSSSSSSSQQQPPPPPpRRrrpPPPPPQQQSSSSSSSd.............................',
+    '..........................dSSSSSSSSSFQQPPPPPCMRRrrMCPPPPPQQSSSSSSSSd............................',
+    '.........................dSSSSSSSSSFQQPPPPPPCMrrrrMCPPPPPPQQSSSSSSSd............................',
+    '........................dSSSSSSSSSSPPPPPPPPPPprrrrpPPPPPPCpppSSSSSSSd...........................',
+    '.......................dSSSSSSSSSPPPPPPPPPPPPPpMMpPPPPPPPCpppCSSSSSSSd..........................',
+    '......................dSSSSSSSSSSPPPPPPPPPPPPPPPPPPPPPPPPCppppSSSSSSSd..........................',
+    '.....................dFFFFFSSSSPPPPPPPPPPPPPPPPPPPPPPPPPPPppppsSSSSSSSd.........................',
+    '.....................dFFFFFSSSSPPPPPPPPPPPPPPPPPPPPPPPPPPPpppppSSSSSSSd.........................',
+    '....................dFFFFFFSSPPPPPPPPPPPPPPPPPPPPPPPPPPPPPCpppppSSSSSSSd........................',
+    '....................dFFFFFFSSPPPPPPPPQQPPPPPPPPPPPPPPPPPPQQpppppCSSSSSSSd.......................',
+    '.....................dFFFFFPPPPPPPPPPQQPPPPPPPPPPPPPPPPPPQQppppppSSSSSSSd.......................',
+    '.....................ddFFdFPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPppppppsSSSSSSSd......................',
+    '.......................dd.qPPPPPPPPPPPPPPPPPPPPQQPPPPPPPPPPpppppppCSSFFFFFd.....................',
+    '..........................qPPPPPPPPPPPPPPPPPPPPQQPPPPPPPPPPppppppppSSFFFFFd.....................',
+    '.........................qPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPppppppppsSFFFFFFd....................',
+    '.........................qqqqqqqqqqqqqqqqpQQpqqqqqqpQQpqqqqqqqqqqqqqSFFFFFFd....................',
+    '........................qqqqqqqqqqqqqqqqqpQQdqqqqqqpQQpqqqqqqqqqqqqqdFFFFFd.....................',
+    '........................qqqqqqqqqqqqqqqqqqppqqqqqqqqppqqqqqqqqqqqqqqqsFFFdd.....................',
+    '.........................qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqdd.......................',
+    '.................................dSSSSssd...............dSSSSssd................................',
+    '.................................dSSSSssd...............dSSSSssd................................',
+    '.................................dSSSSssd...............dSSSSssd................................',
+    '.................................dSSSSssd...............dSSSSssd................................',
+    '.................................dSSSSssd...............dSSSSssd................................',
+    '................................bWWWWWBBBb..............dSSSSssd................................',
+    '...............................bWWWWWWWWWWb............bWWWWWWWWb...............................',
+    '..............................bWWWWWWWWWWWWb..........bWWWWWWWWWWb..............................',
+    '..............................bWWWWWWWWWWWWb.........bWWWWWWWWWWWWb.............................',
+    '..............................bWWWWWWWWWWWWb.........bWWWWWWWWWWWWb.............................',
+    '..............................bbbbbbbbbbbbbb.........bWBBBBBBBBBBWb.............................',
+    '..............................bbbbbbbbbbbbbb.........bbbbbbbbbbbbbb.............................',
+    '..............................bbbbbbbbbbbbbb.........bbbbbbbbbbbbbb.............................',
+    '...............................bbbbbbbbbbbb..........bbbbbbbbbbbbbb.............................',
+    '......................................................bbbbbbbbbbbb..............................',
+    '................................................................................................',
+  ],
+  walk2: [
+    '................................................................................................',
+    '................................................xxxx............................................',
+    '..............................................xxKKKKx...........................................',
+    '..............................................xKKKKKx...........................................',
+    '.............................................xKKKKKKKx..........................................',
+    '.............................................xKKKKKKKx..........................................',
+    '.............................................xKKKKKKKx..........................................',
+    '.............................................xKKKKKKkx..........................................',
+    '.............................................xHHHHHHKx..........................................',
+    '............................................rrrrrrrrrr..........................................',
+    '........................................xxxrRRRRRRRRRRrx........................................',
+    '....................................xxxxkkHrRRRRRRRRRRrHxxxx....................................',
+    '..................................xxKKKKkKKrrrrrrrrrrrrKkkKKxx..................................',
+    '.................................xKKKKKKKKKHqrrrrrrrrqHKKkKKKKxx................................',
+    '...............................xxkKKKHHHKKKKKKKKKkKKKKKKKkKKKKKkx...............................',
+    '..............................xKKKKHHHHHKKKKKKKKKkKKKKKKKkKKKKKKkx..............................',
+    '.............................xKKKKHHHHHKKKKKKKKKKkKKKKKKKkKKKKKKkKx.............................',
+    '............................xKKKKKHHHKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKx............................',
+    '...........................xKKKKKKKKKKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKKx...........................',
+    '...........................xKKKKkkKKKKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKKx...........................',
+    '..........................xKKKKKkKKKKKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKKKx..........................',
+    '..........................xKKKKKkKKKKKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKKKx..........................',
+    '.........................xKKKKKKkKKKKKKKkKKKKKKKKkkKKKKKKkKKKKKKkKKKKKx.........................',
+    '.........................xKKKKKKkKKKKKKKkKKKKKKKKkkKKKKKKkKKKKKKkKKKKKx.........................',
+    '.........................xKKKKKKkKKKKKKKkKKKKKKKKkkKKKKKKkKKKKKKkkKKKKx.........................',
+    '........................xKKKKKKkkKKKKKKkkKKKKKKKKKKKKKKKKkkKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKKKKKKKKkkKKKKKKKKKKKKKKKKkkKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKKKKKKKKkHHKKKKKKKdqKKKKKKkkKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKdKKKKKKHssKKKKKKHssKKKKKKKHHKKKKKKKKKKKx........................',
+    '........................xKKKKKKKsHKKKKHsSsHKKKKKdSSqKKKKKHsdKKKKKKKKKKKx........................',
+    '........................xKKKKKKKSdKKKKHHHKKKKKKHSSSsKKKKKHddHKKKKKKKKKKx........................',
+    '........................xKKKKKKKSsKKKKKKKKHHKKHsSSSSqKKKKKKKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKSSHKHHHqdsSsKKdSSSSSsHKHqHHHHKKKKKKKKKKx........................',
+    '........................xKKKKKKKSSsdqHKKHsSSqHSSSSSSSHKKKKKdddKKKKKKKKKx........................',
+    '........................xKKKKKKKSSSsqqKxxksSssSSSSSSSdHqKxxkdsHHKKKKKKKx........................',
+    '........................xKKKKKKKSSsbWWbkxxKsSSSSSSSSsbBWbkxxkdddKKKKKKKx........................',
+    '........................xKKKKKKKSSdbWWBKxxxdSSSSSSSSdbWWBKxxxqssKKKKKKKx........................',
+    '........................xKKKKKKKSSHqWWbkxxxHSSSSSSSSHqWWbkxxxKssKKKKKKKx........................',
+    '........................xKKKKKKKSSkxHHkxxxxkSSSSSSSSkxKHxxxxxkssKKKKKKKx........................',
+    '........................xKKKKKKKSSkxxxxxxxxkSSSSSSSSkxxxxxxxxkssKKKKKKKx........................',
+    '........................xKKKKKKKSSHxxxxxqqxHSSSSSSSSKxxxxxqqxKssKKKKKKKx........................',
+    '.........................xKKKKKKSSdxxxxxBBxdSSSSSSSSdxxxxxBBxqssKKKKKKx.........................',
+    '.........................xKKKKKHSSsKxxxxHHKsSSSSSSSSsKxxxxHHKdssHKKKKKx.........................',
+    '.........................xKKKHdpCCSskxxxxksSSSSSSSSSSskxxxxkdsCCpdHKKKx.........................',
+    '..........................xKqsssCCCSsHKKHsSSSSSSSSSSSSsHKKHdsCCCsssqKx..........................',
+    '..........................xHpsssCCCCSSssSSSSSSSSSSSSSSSsssssCCCCssspHx..........................',
+    '...........................xpsssCCCCSSSSSSSSSSSSSSSSSSssssssCCCCssspx...........................',
+    '...........................xqsssCCCSSSSSSSSSpsSSSSspSSsssssssCCCsspq............................',
+    '............................xHdpCCSSSSSSSSSsMMsSSsMMsSssssssssCCpdHx............................',
+    '.............................xKHSSSSSSSSSSSSsMMMMMMsSSssssssssssHKx.............................',
+    '..............................xKdSSSSSSSSSSSSspMMpsSSssssssssssdKx..............................',
+    '...............................xxdSSSSSSSSSSSSSSSSSSSsssssssssdxx...............................',
+    '.................................xqsSSSSSSSSSSSSSSSSSssssssssqx.................................',
+    '..................................xHFSSSSSSSSSSSSSSSSssssssSHx..................................',
+    '.................................dPPBBFSSSSSSSSSSSSSsssssSFBpsd.................................',
+    '................................dSSSFBBBQFSSSSSSSSSSssSQBBBFSSSd................................',
+    '...............................dSSSSSQBBBBBBBBBBBBBBBBBBBBQSSSSSd...............................',
+    '..............................dSSSSSSQQQPPPPPPPPPPPPPPPPQQQSSSSSSd..............................',
+    '..............................dSSSSSSQQQPPPPPPRMMpPPPPPPQQQSSSSSSd..............................',
+    '.............................dSSSSSSSQQQPPPPPpRRrrpPPPPPQQQSSSSSSSd.............................',
+    '.............................dSSSSSSSQQPPPPPCMRRrrMCPPPPPQQSSSSSSSd.............................',
+    '.............................dSSSSSSQQPPPPPPCMrrrrMCPPPPPPQQSSSSSSd.............................',
+    '............................dSSSSSSSPPPPPPPPPprrrrpPPPPPPCppSSSSSSSd............................',
+    '............................dSSSSSSPPPPPPPPPPPpMMpPPPPPPPCppsSSSSSSd............................',
+    '...........................dSSSSSSSPPPPPPPPPPPPPPPPPPPPPPCpppSSSSSSSd...........................',
+    '...........................dSSSSSSSPPPPPPPPPPPPPPPPPPPPPPPpppCSSSSSSd...........................',
+    '...........................dSSSSSSPPPPPPPPPPPPPPPPPPPPPPPPppppSSSSSSd...........................',
+    '..........................dSSSSSSSPPPPPPPPPPPPPPPPPPPPPPPPCpppCSSSSSSd..........................',
+    '..........................dSSSSSSPPPPQQPPPPPPPPPPPPPPPPPPQQppppSSSSSSd..........................',
+    '.........................dFFFFFSSPPPPQQPPPPPPPPPPPPPPPPPPQQppppSSFFFFFd.........................',
+    '.........................dFFFFFSSPPPPPPPPPPPPPPPPPPPPPPPPPPppppCSFFFFFd.........................',
+    '........................dFFFFFFSPPPPPPPPPPPPPPPQQPPPPPPPPPPpppppSFFFFFFd........................',
+    '........................dFFFFFFSPPPPPPPPPPPPPPPQQPPPPPPPPPPpppppSFFFFFFd........................',
+    '.........................dFFFFFPPPPPPPPPPPPPPPPPPPPPPPPPPPPpppppCFFFFFd.........................',
+    '.........................dFFFFsqqqqqqqqqqpQQpqqqqqqpQQpqqqqqqqqqqsFFFFd.........................',
+    '........................qqdssdqqqqqqqqqqqpQQdqqqqqqpQQpqqqqqqqqqqqdssdqq........................',
+    '........................qqqqqqqqqqqqqqqqqqppqqqqqqqqppqqqqqqqqqqqqqqqqqq........................',
+    '.........................qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq.........................',
+    '....................................dSSSSssd.........dSSSSssd...................................',
+    '....................................dSSSSssd.........dSSSSssd...................................',
+    '....................................dSSSSssd.........dSSSSssd...................................',
+    '....................................dSSSSssd.........dSSSSssd...................................',
+    '...................................bWWWWWWWWb........dSSSSssd...................................',
+    '..................................bWWWWWWWWWWb......bWWWWWBBBb..................................',
+    '.................................bWWWWWWWWWWWWb....bWWWWWWWWWWb.................................',
+    '.................................bWWWWWWWWWWWWb...bWWWWWWWWWWWWb................................',
+    '.................................bWBBBBBBBBBBWb...bWWWWWWWWWWWWb................................',
+    '.................................bbbbbbbbbbbbbb...bWWWWWWWWWWWWb................................',
+    '.................................bbbbbbbbbbbbbb...bbbbbbbbbbbbbb................................',
+    '.................................bbbbbbbbbbbbbb...bbbbbbbbbbbbbb................................',
+    '..................................bbbbbbbbbbbb....bbbbbbbbbbbbbb................................',
+    '...................................................bbbbbbbbbbbb.................................',
+    '................................................................................................',
+    '................................................................................................',
+    '................................................................................................',
+    '................................................................................................',
+  ],
+  walk3: [
+    '................................................................................................',
+    '................................................................................................',
+    '................................................................................................',
+    '................................................xxxx............................................',
+    '..............................................xxKKKKx...........................................',
+    '..............................................xKKKKKx...........................................',
+    '.............................................xKKKKKKKx..........................................',
+    '.............................................xKKKKKKKx..........................................',
+    '.............................................xKKKKKKKx..........................................',
+    '.............................................xKKKKKKkx..........................................',
+    '.............................................xHHHHHHKx..........................................',
+    '............................................rrrrrrrrrr..........................................',
+    '........................................xxxrRRRRRRRRRRrx........................................',
+    '....................................xxxxkkHrRRRRRRRRRRrHxxxx....................................',
+    '..................................xxKKKKkKKrrrrrrrrrrrrKkkKKxx..................................',
+    '.................................xKKKKKKKKKHrrrrrrrrrqHKKkKKKKxx................................',
+    '...............................xxkKKKHHHKKKKKKKKKkKKKKKKKkKKKKKkx...............................',
+    '..............................xKKKKHHHHHKKKKKKKKKkKKKKKKKkKKKKKKkx..............................',
+    '.............................xKKKKHHHHHKKKKKKKKKKkKKKKKKKkKKKKKKkKx.............................',
+    '............................xKKKKKHHHKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKx............................',
+    '...........................xKKKKKKKKKKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKKx...........................',
+    '...........................xKKKKkKKKKKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKKx...........................',
+    '..........................xKKKKKkKKKKKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKKKx..........................',
+    '..........................xKKKKKkKKKKKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKKKx..........................',
+    '.........................xKKKKKKkKKKKKKKkKKKKKKKKkkKKKKKKkKKKKKKkKKKKKx.........................',
+    '.........................xKKKKKKkKKKKKKKkKKKKKKKKkkKKKKKKkKKKKKKkKKKKKx.........................',
+    '.........................xKKKKKKkKKKKKKKkKKKKKKKKkkKKKKKKkKKKKKKkkKKKKx.........................',
+    '........................xKKKKKKkkKKKKKKkkKKKKKKKKKKKKKKKKkkKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKKKKKKKKkkKKKKKKKKKKKKKKKKkkKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKKKKKKKKkHHKKKKKKKdqKKKKKKkkKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKdKKKKKKHssKKKKKKHssHKKKKKKHHKKKKKKKKKKKx........................',
+    '........................xKKKKKKKsHKKKKHsSsHKKKKKdSSqKKKKKHsdKKKKKKKKKKKx........................',
+    '........................xKKKKKKKSdKKKKHHKKKKKKKHSSSsKKKKKHddHKKKKKKKKKKx........................',
+    '........................xKKKKKKKSsKKKKKKKKHHKKHsSSSSqKKKKKKKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKSSHKHHHHdsssKKdSSSSSsHKHHHHHHKKKKKKKKKKx........................',
+    '........................xKKKKKKKSSsdqHKKHsSSqHSSSSSSSqKKKKKdddKKKKKKKKKx........................',
+    '........................xKKKKKKKSSSsqqKxxksSssSSSSSSSdHqKxxxdsHHKKKKKKKx........................',
+    '........................xKKKKKKKSSsbBWbkxxKsSSSSSSSSsbBWbkxxkdddKKKKKKKx........................',
+    '........................xKKKKKKKSSdbWWBKxxxdSSSSSSSSdbWWBKxxxqssKKKKKKKx........................',
+    '........................xKKKKKKKSSHqWWbkxxxHSSSSSSSSHqWWbkxxxKssKKKKKKKx........................',
+    '........................xKKKKKKKSSkxKHxxxxxkSSSSSSSSkxKHxxxxxkssKKKKKKKx........................',
+    '........................xKKKKKKKSSkxxxxxxxxkSSSSSSSSkxxxxxxxxkssKKKKKKKx........................',
+    '........................xKKKKKKKSSHxxxxxqqxHSSSSSSSSKxxxxxqqxKssKKKKKKKx........................',
+    '.........................xKKKKKKSSdxxxxxBBkdSSSSSSSSdxxxxxBBxqssKKKKKKx.........................',
+    '.........................xKKKKKKSSsKxxxxHHKsSSSSSSSSsKxxxxHHkdssKKKKKKx.........................',
+    '.........................xKKKHdpCCSskxxxxksSSSSSSSSSSskxxxxkdsCCpdHKKKx.........................',
+    '..........................xKqpssCCCSsHKKHsSSSSSSSSSSSSsHKKHdsCCCsspqKx..........................',
+    '..........................xHssssCCCCSSSSSSSSSSSSSSSSSSSsssssCCCCssspHx..........................',
+    '...........................xssssCCCCSSSSSSSSSSSSSSSSSSssssssCCCCssspx...........................',
+    '...........................xqpssCCCSSSSSSSSSpsSSSSspSSsssssssCCCsspq............................',
+    '............................xHdpCCSSSSSSSSSsMMsSSsMMsSssssssssCCpdHx............................',
+    '.............................xKHSSSSSSSSSSSSsMMMMMMsSSssssssssssHKx.............................',
+    '..............................xKdSSSSSSSSSSSSspMMpsSSssssssssssdKx..............................',
+    '...............................xxdSSSSSSSSSSSSSSSSSSSsssssssssdxx...............................',
+    '.................................xqsSSSSSSSSSSSSSSSSSssssssssqx.................................',
+    '..................................xHFSSSSSSSSSSSSSSSSssssssSHx..................................',
+    '.................................dPPWBFSSSSSSSSSSSSSsssssSFBpsd.................................',
+    '...............................ddSSSFBBBQFSSSSSSSSSSssSQBBBFSSSdd...............................',
+    '...............................dSSSSSQBBBBBBBBBBBBBBBBBBBBQSSSSSd...............................',
+    '...............................dSSSSSQQQPPPPPPPPPPPPPPPPQQQSSSSSSd..............................',
+    '..............................dSSSSSSQQQPPPPPPRMMpPPPPPPQQQSSSSSSd..............................',
+    '..............................dSSSSSSQQQPPPPPpRRrrpPPPPPQQQSSSSSSSd.............................',
+    '..............................dSSSSSSQQPPPPPCMRRrrMCPPPPPQQSSSSSSSd.............................',
+    '.............................dSSSSSSSQPPPPPPCMrrrrMCPPPPPPQFSSSSSSd.............................',
+    '.............................dSSSSSSSPPPPPPPPprrrrpPPPPPPCppSSSSSSSd............................',
+    '.............................dSSSSSSPPPPPPPPPPpMMpPPPPPPPCppCSSSSSSd............................',
+    '.............................dSSSSSSPPPPPPPPPPPPPPPPPPPPPCpppSSSSSSd............................',
+    '.............................dSSSSSSPPPPPPPPPPPPPPPPPPPPPPpppSSFFFFFd...........................',
+    '............................dSSSSSSPPPPPPPPPPPPPPPPPPPPPPPpppCSFFFFFd...........................',
+    '............................dSSSSSSPPPPPPPPPPPPPPPPPPPPPPPCpppSFFFFFFd..........................',
+    '............................dSSSSSSPPQQPPPPPPPPPPPPPPPPPPQQpppPFFFFFFd..........................',
+    '...........................dSSSSSSSPPQQPPPPPPPPPPPPPPPPPPQQpppCFFFFFd...........................',
+    '...........................dSSSSSSSPPPPPPPPPPPPPPPPPPPPPPPPppppSFFFFd...........................',
+    '..........................qFFFFFFSPPPPPPPPPPPPPQQPPPPPPPPPPpppppCPPCpq..........................',
+    '..........................qFFFFFFSPPPPPPPPPPPPPQQPPPPPPPPPPppppppppppq..........................',
+    '.........................qSFFFFFFSPPPPPPPPPPPPPPPPPPPPPPPPPpppppppppppq.........................',
+    '.........................qsFFFFFFsqqqqqqqpQQpqqqqqqpQQpqqqqqqqqqqqqqqqq.........................',
+    '........................qqdFFFFFFdqqqqqqqpQQdqqqqqqpQQpqqqqqqqqqqqqqqqqq........................',
+    '........................qqqsFFFFsqqqqqqqqqppqqqqqqqqppqqqqqqqqqqqqqqqqqq........................',
+    '.........................qqqddddqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq.........................',
+    '.......................................dSSSSssd...dSSSSssd......................................',
+    '.......................................dSSSSssd...dSSSSssd......................................',
+    '.......................................dSSSSssd...dSSSSssd......................................',
+    '.......................................dSSSSssd...dSSSSssd......................................',
+    '.......................................dSSSSssd...dSSSSssd......................................',
+    '.......................................dSSSSssd..bWWWWWBBBb.....................................',
+    '......................................bWWWWWWWWbbWWWWWWWWWWb....................................',
+    '.....................................bWWWWWWWWWWWWWWWWWWWWWWb...................................',
+    '....................................bWWWWWWWWWWWWWWWWWWWWWWWb...................................',
+    '....................................bWWWWWWWWWWWWWWWWWWWWWWWb...................................',
+    '....................................bWBBBBBBBBBBbbbbbbbbbbbbb...................................',
+    '....................................bbbbbbbbbbbbbbbbbbbbbbbbb...................................',
+    '....................................bbbbbbbbbbbbbbbbbbbbbbbbb...................................',
+    '....................................bbbbbbbbbbbbbbbbbbbbbbbb....................................',
+    '.....................................bbbbbbbbbbbb...............................................',
+    '................................................................................................',
+  ],
+  walk4: [
+    '................................................................................................',
+    '................................................xxxx............................................',
+    '..............................................xxKKKKx...........................................',
+    '..............................................xKKKKKx...........................................',
+    '.............................................xKKKKKKKx..........................................',
+    '.............................................xKKKKKKKx..........................................',
+    '.............................................xKKKKKKKx..........................................',
+    '.............................................xKKKKKKkx..........................................',
+    '.............................................xHHHHHHKx..........................................',
+    '............................................rrrrrrrrrr..........................................',
+    '........................................xxxrRRRRRRRRRRrx........................................',
+    '....................................xxxxkkHrRRRRRRRRRRrHxxxx....................................',
+    '..................................xxKKKKkKKrrrrrrrrrrrrKkkKKxx..................................',
+    '.................................xKKKKKKKKKHqrrrrrrrrqHKKkKKKKxx................................',
+    '...............................xxkKKKHHHKKKKKKKKKkKKKKKKKkKKKKKkx...............................',
+    '..............................xKKKKHHHHHKKKKKKKKKkKKKKKKKkKKKKKKkx..............................',
+    '.............................xKKKKHHHHHKKKKKKKKKKkKKKKKKKkKKKKKKkKx.............................',
+    '............................xKKKKKHHHKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKx............................',
+    '...........................xKKKKKKKKKKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKKx...........................',
+    '...........................xKKKKkkKKKKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKKx...........................',
+    '..........................xKKKKKkKKKKKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKKKx..........................',
+    '..........................xKKKKKkKKKKKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKKKx..........................',
+    '.........................xKKKKKKkKKKKKKKkKKKKKKKKkkKKKKKKkKKKKKKkKKKKKx.........................',
+    '.........................xKKKKKKkKKKKKKKkKKKKKKKKkkKKKKKKkKKKKKKkKKKKKx.........................',
+    '.........................xKKKKKKkKKKKKKKkKKKKKKKKkkKKKKKKkKKKKKKkkKKKKx.........................',
+    '........................xKKKKKKkkKKKKKKkkKKKKKKKKKKKKKKKKkkKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKKKKKKKKkkKKKKKKKKKKKKKKKKkkKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKKKKKKKKkHHKKKKKKKdqKKKKKKkkKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKdKKKKKKHssKKKKKKHssKKKKKKKHHKKKKKKKKKKKx........................',
+    '........................xKKKKKKKsHKKKKHsSsHKKKKKdSSqKKKKKHsdKKKKKKKKKKKx........................',
+    '........................xKKKKKKKSdKKKKHHHKKKKKKHSSSsKKKKKHddHKKKKKKKKKKx........................',
+    '........................xKKKKKKKSsKKKKKKKKHHKKHsSSSSqKKKKKKKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKSSHKHHHqdsSsKKdSSSSSsHKHqHHHHKKKKKKKKKKx........................',
+    '........................xKKKKKKKSSsdqHKKHsSSqHSSSSSSSHKKKKKdddKKKKKKKKKx........................',
+    '........................xKKKKKKKSSSsqqKxxksSssSSSSSSSdHqKxxkdsHHKKKKKKKx........................',
+    '........................xKKKKKKKSSsbWWbkxxKsSSSSSSSSsbBWbkxxkdddKKKKKKKx........................',
+    '........................xKKKKKKKSSdbWWBKxxxdSSSSSSSSdbWWBKxxxqssKKKKKKKx........................',
+    '........................xKKKKKKKSSHqWWbkxxxHSSSSSSSSHqWWbkxxxKssKKKKKKKx........................',
+    '........................xKKKKKKKSSkxHHkxxxxkSSSSSSSSkxKHxxxxxkssKKKKKKKx........................',
+    '........................xKKKKKKKSSkxxxxxxxxkSSSSSSSSkxxxxxxxxkssKKKKKKKx........................',
+    '........................xKKKKKKKSSHxxxxxqqxHSSSSSSSSKxxxxxqqxKssKKKKKKKx........................',
+    '.........................xKKKKKKSSdxxxxxBBxdSSSSSSSSdxxxxxBBxqssKKKKKKx.........................',
+    '.........................xKKKKKHSSsKxxxxHHKsSSSSSSSSsKxxxxHHKdssHKKKKKx.........................',
+    '.........................xKKKHdpCCSskxxxxksSSSSSSSSSSskxxxxkdsCCpdHKKKx.........................',
+    '..........................xKqsssCCCSsHKKHsSSSSSSSSSSSSsHKKHdsCCCsssqKx..........................',
+    '..........................xHpsssCCCCSSssSSSSSSSSSSSSSSSsssssCCCCssspHx..........................',
+    '...........................xpsssCCCCSSSSSSSSSSSSSSSSSSssssssCCCCssspx...........................',
+    '...........................xqsssCCCSSSSSSSSSpsSSSSspSSsssssssCCCsspq............................',
+    '............................xHdpCCSSSSSSSSSsMMsSSsMMsSssssssssCCpdHx............................',
+    '.............................xKHSSSSSSSSSSSSsMMMMMMsSSssssssssssHKx.............................',
+    '..............................xKdSSSSSSSSSSSSspMMpsSSssssssssssdKx..............................',
+    '...............................xxdSSSSSSSSSSSSSSSSSSSsssssssssdxx...............................',
+    '.................................xqsSSSSSSSSSSSSSSSSSssssssssqx.................................',
+    '..................................xHFSSSSSSSSSSSSSSSSssssssSHx..................................',
+    '.................................dPPBBFSSSSSSSSSSSSSsssssSFBpsd.................................',
+    '................................dSSSFBBBQFSSSSSSSSSSssSQBBBFSSSd................................',
+    '...............................dSSSSSQBBBBBBBBBBBBBBBBBBBBQSSSSSd...............................',
+    '..............................dSSSSSSQQQPPPPPPPPPPPPPPPPQQQSSSSSSd..............................',
+    '..............................dSSSSSSQQQPPPPPPRMMpPPPPPPQQQSSSSSSd..............................',
+    '.............................dSSSSSSSQQQPPPPPpRRrrpPPPPPQQQSSSSSSSd.............................',
+    '.............................dSSSSSSSQQPPPPPCMRRrrMCPPPPPQQSSSSSSSd.............................',
+    '.............................dSSSSSSQQPPPPPPCMrrrrMCPPPPPPQQSSSSSSd.............................',
+    '............................dSSSSSSSPPPPPPPPPprrrrpPPPPPPCppSSSSSSSd............................',
+    '............................dSSSSSSPPPPPPPPPPPpMMpPPPPPPPCppsSSSSSSd............................',
+    '...........................dSSSSSSSPPPPPPPPPPPPPPPPPPPPPPCpppSSSSSSSd...........................',
+    '...........................dSSSSSSSPPPPPPPPPPPPPPPPPPPPPPPpppCSSSSSSd...........................',
+    '...........................dSSSSSSPPPPPPPPPPPPPPPPPPPPPPPPppppSSSSSSd...........................',
+    '..........................dSSSSSSSPPPPPPPPPPPPPPPPPPPPPPPPCpppCSSSSSSd..........................',
+    '..........................dSSSSSSPPPPQQPPPPPPPPPPPPPPPPPPQQppppSSSSSSd..........................',
+    '.........................dFFFFFSSPPPPQQPPPPPPPPPPPPPPPPPPQQppppSSFFFFFd.........................',
+    '.........................dFFFFFSSPPPPPPPPPPPPPPPPPPPPPPPPPPppppCSFFFFFd.........................',
+    '........................dFFFFFFSPPPPPPPPPPPPPPPQQPPPPPPPPPPpppppSFFFFFFd........................',
+    '........................dFFFFFFSPPPPPPPPPPPPPPPQQPPPPPPPPPPpppppSFFFFFFd........................',
+    '.........................dFFFFFPPPPPPPPPPPPPPPPPPPPPPPPPPPPpppppCFFFFFd.........................',
+    '.........................dFFFFsqqqqqqqqqqpQQpqqqqqqpQQpqqqqqqqqqqsFFFFd.........................',
+    '........................qqdssdqqqqqqqqqqqpQQdqqqqqqpQQpqqqqqqqqqqqdssdqq........................',
+    '........................qqqqqqqqqqqqqqqqqqppqqqqqqqqppqqqqqqqqqqqqqqqqqq........................',
+    '.........................qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq.........................',
+    '....................................dSSSSssd.........dSSSSssd...................................',
+    '....................................dSSSSssd.........dSSSSssd...................................',
+    '....................................dSSSSssd.........dSSSSssd...................................',
+    '....................................dSSSSssd.........dSSSSssd...................................',
+    '....................................dSSSSssd........bWWWWWWWWb..................................',
+    '...................................bWWWWWBBBb......bWWWWWWWWWWb.................................',
+    '..................................bWWWWWWWWWWb....bWWWWWWWWWWWWb................................',
+    '.................................bWWWWWWWWWWWWb...bWWWWWWWWWWWWb................................',
+    '.................................bWWWWWWWWWWWWb...bWBBBBBBBBBBWb................................',
+    '.................................bWWWWWWWWWWWWb...bbbbbbbbbbbbbb................................',
+    '.................................bbbbbbbbbbbbbb...bbbbbbbbbbbbbb................................',
+    '.................................bbbbbbbbbbbbbb...bbbbbbbbbbbbbb................................',
+    '.................................bbbbbbbbbbbbbb....bbbbbbbbbbbb.................................',
+    '..................................bbbbbbbbbbbb..................................................',
+    '................................................................................................',
+    '................................................................................................',
+    '................................................................................................',
+    '................................................................................................',
+  ],
+  jump: [
+    '................................................................................................',
+    '................................................................................................',
+    '.................................................xxx............................................',
+    '..............................................xxxKKKx...........................................',
+    '..............................................xKKKKKx...........................................',
+    '.............................................xKKKKKKKx..........................................',
+    '.............................................xKKKKKKKx..........................................',
+    '.............................................xKKKKKKKx..........................................',
+    '.............................................xKKKKKKkx..........................................',
+    '.............................................xKKKKKKkx..........................................',
+    '............................................rrrrrrrrrq..........................................',
+    '.......................................xxxxrRRRRRRRRRRrxx.......................................',
+    '....................................xxxKkkHrRRRRRRRRRRrHKxxx....................................',
+    '..................................xxKKKKkKKrrrrrrrrrrrrKkkKKxx..................................',
+    '.................................xKKKKKKKKKHrrrrrrrrrrHKKkKKKKx.................................',
+    '...............................xxkKKKHHHKKKKKHHHKKHHHKKKKkKKKKKxx...............................',
+    '..............................xKKKKHHHHHKKKKKKKKKkKKKKKKKkKKKKKKkx..............................',
+    '.............................xKKKKHHHHHKkKKKKKKKKkKKKKKKKkKKKKKKkKx.............................',
+    '............................xKKKKKHHHKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKx............................',
+    '...........................xKKKKKKKKKKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKKx...........................',
+    '...........................xKKKKkKKKKKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKKx...........................',
+    '..........................xKKKKKkKKKKKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKKKx..........................',
+    '..........................xKKKKKkKKKKKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKKKx..........................',
+    '.........................xKKKKKKkKKKKKKKkKKKKKKKKkkKKKKKKkKKKKKKkKKKKKx.........................',
+    '.........................xKKKKKKkKKKKKKKkKKKKKKKKkkKKKKKKkKKKKKKkKKKKKx.........................',
+    '.........................xKKKKKKkKKKKKKKkKKKKKKKKkkKKKKKKkKKKKKKkkKKKKx.........................',
+    '........................xKKKKKKkkKKKKKKkkKKKKKKKKKKKKKKKKkkKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKKKKKKKKkkKKKKKKKKKKKKKKKKkkKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKKKKKKKKkHHKKKKKKKqqKKKKKKkkKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKdKKKKKKHssKKKKKKHssHKKKKKKHHKKKKKKKKKKKx........................',
+    '........................xKKKKKKKsHKKKKHsSsHKKKKKdSSqKKKKKHsdKKKKKKKKKKKx........................',
+    '........................xKKKKKKKSsKKKKKHHHKKKKKqSSSsKKKKKHqdHKKKKKKKKKKx........................',
+    '........................xKKKKKKKSSKKKKKKKKHHKKHsSSSSqKKKKKKKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKSSHKKHqdssssKKdSSSSSsHKHdqHKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKSSsdqHkkHsSSqHSSSSSSSqKHkkHdsdKKKKKKKKKx........................',
+    '........................xKKKKKKKSSSdddKxxkdSssSSSSSSSdqdkxxkdsHHKKKKKKKx........................',
+    '........................xKKKKKKKSSsbWWbkxxKsSSSSSSSSsbWWbkxxkdddKKKKKKKx........................',
+    '........................xKKKKKKKSSdbWWBKxxxdSSSSSSSSdbWWBKxxxqssKKKKKKKx........................',
+    '........................xKKKKKKKSSHqBBbkxxxHSSSSSSSSHqBBbkxxxKssKKKKKKKx........................',
+    '........................xKKKKKKKSSkxHHkxxxxkSSSSSSSSkxHHkxxxxkssKKKKKKKx........................',
+    '........................xKKKKKKKSSkxxxxxxxxkSSSSSSSSkxxxxxxxxkssKKKKKKKx........................',
+    '........................xKKKKKKKSSHxxxxxddxHSSSSSSSSHxxxxxddxKssKKKKKKKx........................',
+    '.........................xKKKKKKSSdxxxxxBBkdSSSSSSSSdxxxxxBBxqssKKKKKKx.........................',
+    '.....................dd..xKKKKKKSSsKxxxxHHKsSSSSSSSSsKxxxxHHkdssKKKKKKx..dd.....................',
+    '...................ddFFddHKKKHdpCCSdkxxxxkdSSSSSSSSSSdkxxxxkdsCCpdHKKKHddFFdd...................',
+    '...................dFFFFFsKKdpssCCCSsHkkHsSSSSSSSSSSSSsHkkHdsCCCsspdKKsFFFFFd...................',
+    '..................dFFFFFFSdHssssCCCCSSSSSSSSSSSSSSSSSSSsssssCCCCssssHdSFFFFFFd..................',
+    '..................dFFFFFFSsHssssCCCCSSSSSSSSSSSSSSSSSSssssssCCCCssssHsSFFFFFFd..................',
+    '...................dFFFFFSSddpssCCCSSSSSSSSSpsSSSSspSSsssssssCCCsspdsSSFFFFFd...................',
+    '...................dFFFFFSSSdHqdCSSSSSSSSSSCMMsSSpMMCSsssssssssCdqHdSSSFFFFFd...................',
+    '....................dFFSSSSSSqKKSSSSSSSSSSSSsMMMMMMsSSssssssssssKKqSSSSSSFFd....................',
+    '.....................dSSSSSSSSdHdSSSSSSSSSSSSspMMpsSSssssssssssdHdSSSSSSSSd.....................',
+    '......................dSSSSSSSSsddSSSSSSSSSSSSSSSSSSSsssssssssddsSSSSSSSSd......................',
+    '.......................dSSSSSSSSSdqSSSSSSSSSSSSSSSSSSssssssssHdSSSSSSSSSd.......................',
+    '........................dSSSSSSSSSdHSSSSSSSSSSSSSSSSSssssssSHdSSSSSSSSSd........................',
+    '.........................dSSSSSSSSSCBBFSSSSSSSSSSSSSsssssSFBsSSSSSSSSSd.........................',
+    '..........................dSSSSSSSSSFBBBFFSSSSSSSSSSssSSBBBFSSSSSSSSSd..........................',
+    '...........................dSSSSSSSSSQQBBBBBBBBBBBBBBBBBBQQSSSSSSSSSd...........................',
+    '............................dSSSSSSSSQQPPPPPPPPCCPPPPPPPPQQSSSSSSSSd............................',
+    '.............................dSSSSSSSQQQPPPPPPpMMpPPPPPPQQQSSSSSSSd.............................',
+    '..............................dSSSSSSQQQPPPPPpRRrrpPPPPPQQQSSSSSSd..............................',
+    '...............................dSSSSQQQPPPPPCMRRrrMCPPPPPQQQSSSSd...............................',
+    '...............................qPSSQQQQPPPPPCMrrrrMCPPPPPPQQQSCpq...............................',
+    '..............................qPPPPPPPPPPPPPPprrrrpPPPPPPCpppppppq..............................',
+    '..............................qPPPPPPPPPPPPPPPpMMpPPPPPPPCpppppppq..............................',
+    '.............................qPPPPPPPPPPPPPPPPPCCPPPPPPPPCppppppppq.............................',
+    '.............................qPPPPPPPPPPPPPPPPPPPPPPPPPPPPppppppppq.............................',
+    '.............................qPPPPPPPPPPPPPPPPPPPPPPPPPPPPpppppppppq............................',
+    '............................qPPPPPPPPPPPPPPPPPPPPPPPPPPPPPCppppppppq............................',
+    '............................qPPPPPPPPQQPPPPPPPPPPPPPPPPPPQQppppppppq............................',
+    '...........................qPPPPPPPPPQQPPPPPPPPPPPPPPPPPPQQpppppppppq...........................',
+    '...........................qPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPpppppppppq...........................',
+    '..........................qPPPPPPPPPPPPPPPPPPPPQQPPPPPPPPPPppppppppppq..........................',
+    '..........................qPPPPPPPPPPPPPPPPPPPPQQPPPPPPPPPPppppppppppq..........................',
+    '.........................dCCCCCCCCCCCCCCCPPPPCCPPCCPPPPCCCCpppppppppppq.........................',
+    '.........................qqqqqqqqqqqqqqqqpQQpqqqqqqpQQpqqqqqqqqqqqqqqqq.........................',
+    '........................qqqqqqqqqqqqqqqqqpQQpqqqqqqpQQpqqqqqqqqqqqqqqqqq........................',
+    '........................qqqqqqqqqqqqqqqqqqddqqqqqqqqddqqqqqqqqqqqqqqqqqq........................',
+    '.........................qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq.........................',
+    '..................................dSSSSssd.............dSSSSssd.................................',
+    '..................................dSSSSssd.............dSSSSssd.................................',
+    '.................................bWWWWWBBBb............dSSSSssd.................................',
+    '................................bWWWWWWWWWWb...........dSSSSssd.................................',
+    '...............................bWWWWWWWWWWWWb.........bWWWWWBBBb................................',
+    '...............................bWWWWWWWWWWWWb........bWWWWWWWWWWb...............................',
+    '...............................bWWWWWWWWWWWWb.......bWWWWWWWWWWWWb..............................',
+    '...............................bbbbbbbbbbbbbb.......bWWWWWWWWWWWWb..............................',
+    '...............................bbbbbbbbbbbbbb.......bWWWWWWWWWWWWb..............................',
+    '...............................bbbbbbbbbbbbbb.......bbbbbbbbbbbbbb..............................',
+    '................................bbbbbbbbbbbb........bbbbbbbbbbbbbb..............................',
+    '....................................................bbbbbbbbbbbbbb..............................',
+    '.....................................................bbbbbbbbbbbb...............................',
+    '................................................................................................',
+    '................................................................................................',
+    '................................................................................................',
+    '................................................................................................',
+  ],
+  fall: [
+    '................................................................................................',
+    '................................................................................................',
+    '................................................................................................',
+    '................................................xxxx............................................',
+    '..............................................xxKKKKx...........................................',
+    '..............................................xKKKKKx...........................................',
+    '.............................................xKKKKKKKx..........................................',
+    '.............................................xKKKKKKKx..........................................',
+    '.............................................xKKKKKKKx..........................................',
+    '.............................................xKKKKKKkx..........................................',
+    '.............................................xHHHHHHKx..........................................',
+    '............................................rrrrrrrrrr..........................................',
+    '........................................xxxrRRRRRRRRRRrx........................................',
+    '....................................xxxxkkHrRRRRRRRRRRrHxxxx....................................',
+    '..................................xxKKKKkKKrrrrrrrrrrrrKkkKKxx..................................',
+    '.................................xKKKKKKKKKHrrrrrrrrrqHKKkKKKKxx................................',
+    '...............................xxkKKKHHHKKKKKKKKKkKKKKKKKkKKKKKkx...............................',
+    '..............................xKKKKHHHHHKKKKKKKKKkKKKKKKKkKKKKKKkx..............................',
+    '.............................xKKKKHHHHHKKKKKKKKKKkKKKKKKKkKKKKKKkKx.............................',
+    '............................xKKKKKHHHKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKx............................',
+    '...........................xKKKKKKKKKKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKKx...........................',
+    '...........................xKKKKkKKKKKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKKx...........................',
+    '..........................xKKKKKkKKKKKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKKKx..........................',
+    '..........................xKKKKKkKKKKKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKKKx..........................',
+    '.........................xKKKKKKkKKKKKKKkKKKKKKKKkkKKKKKKkKKKKKKkKKKKKx.........................',
+    '.........................xKKKKKKkKKKKKKKkKKKKKKKKkkKKKKKKkKKKKKKkKKKKKx.........................',
+    '.........................xKKKKKKkKKKKKKKkKKKKKKKKkkKKKKKKkKKKKKKkkKKKKx.........................',
+    '........................xKKKKKKkkKKKKKKkkKKKKKKKKKKKKKKKKkkKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKKKKKKKKkkKKKKKKKKKKKKKKKKkkKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKKKKKKKKkHHKKKKKKKdqKKKKKKkkKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKdKKKKKKHssKKKKKKHssHKKKKKKHHKKKKKKKKKKKx........................',
+    '........................xKKKKKKKsHKKKKHsSsHKKKKKdSSqKKKKKHsdKKKKKKKKKKKx........................',
+    '........................xKKKKKKKSdKKKKHHKKKKKKKHSSSsKKKKKHddHKKKKKKKKKKx........................',
+    '........................xKKKKKKKSsKKKKKKKKHHKKHsSSSSqKKKKKKKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKSSHKHHHHdsssKKdSSSSSsHKHHHHHHKKKKKKKKKKx........................',
+    '........................xKKKKKKKSSsdqHKKHsSSqHSSSSSSSqKKKKKdddKKKKKKKKKx........................',
+    '........................xKKKKKKKSSSsqqKxxksSssSSSSSSSdHqKxxxdsHHKKKKKKKx........................',
+    '........................xKKKKKKKSSsbBWbkxxKsSSSSSSSSsbBWbkxxkdddKKKKKKKx........................',
+    '........................xKKKKKKKSSdbWWBKxxxdSSSSSSSSdbWWBKxxxqssKKKKKKKx........................',
+    '........................xKKKKKKKSSHqWWbkxxxHSSSSSSSSHqWWbkxxxKssKKKKKKKx........................',
+    '........................xKKKKKKKSSkxKHxxxxxkSSSSSSSSkxKHxxxxxkssKKKKKKKx........................',
+    '........................xKKKKKKKSSkxxxxxxxxkSSSSSSSSkxxxxxxxxkssKKKKKKKx........................',
+    '........................xKKKKKKKSSHxxxxxqqxHSSSSSSSSKxxxxxqqxKssKKKKKKKx........................',
+    '.........................xKKKKKKSSdxxxxxBBkdSSSSSSSSdxxxxxBBxqssKKKKKKx.........................',
+    '.........................xKKKKKKSSsKxxxxHHKsSSSSSSSSsKxxxxHHkdssKKKKKKx.........................',
+    '.........................xKKKHdpCCSskxxxxksSSSSSSSSSSskxxxxkdsCCpdHKKKx.........................',
+    '..........................xKqpssCCCSsHKKHsSSSSSSSSSSSSsHKKHdsCCCsspqKx..........................',
+    '..........................xHssssCCCCSSSSSSSSSSCssCSSSSSsssssCCCCssspHx..........................',
+    '...........................xssssCCCCSSSSSSSSSsMMMMsSSSssssssCCCCssspx...........................',
+    '...........................xqpssCCCSSSSSSSSSSMMMMMMSSSsssssssCCCsspq............................',
+    '...................dd.......xHdpCCSSSSSSSSSSsMMMMMMsSSssssssssCCpdHx.......dd...................',
+    '.................ddFFdd......xKHSSSSSSSSSSSSsMMMMMMCSSssssssssssHKx......ddFFdd.................',
+    '.................dFFFFFdd.....xKdSSSSSSSSSSSSMMMMMMSSssssssssssdKx.....ddFFFFFd.................',
+    '................dFFFFFFSSddd...xxdSSSSSSSSSSSsMMMMsSSsssssssssdxx...dddSSFFFFFFd................',
+    '................dFFFFFFSSSSSdd...xqsSSSSSSSSSSsppsSSSssssssssqx...ddSSSSSFFFFFFd................',
+    '.................dFFFFFSSSSSSSddd.xHFSSSSSSSSSSSSSSSSssssssSHx.dddSSSSSSSFFFFFd.................',
+    '.................ddFFFFSSSSSSSSSSdSPWBFSSSSSSSSSSSSSsssssSFBpCdSSSSSSSSSSFFFFdd.................',
+    '...................ddSSSSSSSSSSSSSSSFBBBQFSSSSSSSSSSssSQBBBFSSSSSSSSSSSSSSSdd...................',
+    '.....................dddSSSSSSSSSSSSSQBBBBBBBBBBBBBBBBBBBBQSSSSSSSSSSSSSddd.....................',
+    '........................ddSSSSSSSSSSSQQQPPPPPPPPPPPPPPPPQQQSSSSSSSSSSSdd........................',
+    '..........................dddSSSSSSSSQQQPPPPPPRMMpPPPPPPQQQSSSSSSSSddd..........................',
+    '.............................dSSSSSSSQQQPPPPPpRRrrpPPPPPQQQSSSSSSSd.............................',
+    '..............................dSSSSSFQQPPPPPCMRRrrMCPPPPPQQFSSSSSd..............................',
+    '...............................qPPQQQQPPPPPPCMrrrrMCPPPPPPQQQSCpq...............................',
+    '..............................qPPPPPPPPPPPPPPprrrrpPPPPPPCpppppppq..............................',
+    '..............................qPPPPPPPPPPPPPPPpMMpPPPPPPPCpppppppq..............................',
+    '.............................qPPPPPPPPPPPPPPPPPPPPPPPPPPPCppppppppq.............................',
+    '.............................qPPPPPPPPPPPPPPPPPPPPPPPPPPPPppppppppq.............................',
+    '.............................qPPPPPPPPPPPPPPPPPPPPPPPPPPPPppppppppq.............................',
+    '............................qPPPPPPPPPPPPPPPPPPPPPPPPPPPPPCppppppppq............................',
+    '............................qPPPPPPPPQQPPPPPPPPPPPPPPPPPPQQppppppppq............................',
+    '...........................qPPPPPPPPPQQPPPPPPPPPPPPPPPPPPQQpppppppppq...........................',
+    '...........................qPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPpppppppppq...........................',
+    '..........................qPPPPPPPPPPPPPPPPPPPPQQPPPPPPPPPPppppppppppq..........................',
+    '..........................qPPPPPPPPPPPPPPPPPPPPQQPPPPPPPPPPppppppppppq..........................',
+    '.........................qPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPpppppppppppq.........................',
+    '.........................qqqqqqqqqqqqqqqqpQQpqqqqqqpQQpqqqqqqqqqqqqqqqq.........................',
+    '........................qqqqqqqqqqqqqqqqqpQQdqqqqqqpQQpqqqqqqqqqqqqqqqqq........................',
+    '........................qqqqqqqqqqqqqqqqqqppqqqqqqqqppqqqqqqqqqqqqqqqqqq........................',
+    '.........................qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq.........................',
+    '.................................dSSSSssd...............dSSSSssd................................',
+    '.................................dSSSSssd..............bWWWWWBBBb...............................',
+    '.................................dSSSSssd.............bWWWWWWWWWWb..............................',
+    '.................................dSSSSssd............bWWWWWWWWWWWWb.............................',
+    '................................bWWWWWWWWb...........bWWWWWWWWWWWWb.............................',
+    '...............................bWWWWWWWWWWb..........bWWWWWWWWWWWWb.............................',
+    '..............................bWWWWWWWWWWWWb.........bbbbbbbbbbbbbb.............................',
+    '..............................bWWWWWWWWWWWWb.........bbbbbbbbbbbbbb.............................',
+    '..............................bWBBBBBBBBBBWb.........bbbbbbbbbbbbbb.............................',
+    '..............................bbbbbbbbbbbbbb..........bbbbbbbbbbbb..............................',
+    '..............................bbbbbbbbbbbbbb....................................................',
+    '..............................bbbbbbbbbbbbbb....................................................',
+    '...............................bbbbbbbbbbbb.....................................................',
+    '................................................................................................',
+    '................................................................................................',
+    '................................................................................................',
+  ],
+  hurt: [
+    '................................................................................................',
+    '................................................................................................',
+    '................................................................................................',
+    '................................................................................................',
+    '.................................................xxx............................................',
+    '..............................................xxxKKKx...........................................',
+    '..............................................xKKKKKx...........................................',
+    '.............................................xKKKKKKKx..........................................',
+    '.............................................xKKKKKKKx..........................................',
+    '.............................................xKKKKKKKx..........................................',
+    '.............................................xKKKKKKkx..........................................',
+    '.............................................xKKKKKKkx..........................................',
+    '............................................rrrrrrrrrq..........................................',
+    '.......................................xxxxrRRRRRRRRRRrxx.......................................',
+    '....................................xxxKkkHrRRRRRRRRRRrHKxxx....................................',
+    '..................................xxKKKKkKKrrrrrrrrrrrrKkkKKxx..................................',
+    '.................................xKKKKKKKKKHrrrrrrrrrrHKKkKKKKx.................................',
+    '...............................xxkKKKHHHKKKKKHHHHKHHHKKKKkKKKKKxx...............................',
+    '..............................xKKKKHHHHHKKKKKKKKKkKKKKKKKkKKKKKKkx..............................',
+    '.............................xKKKKHHHHHKkKKKKKKKKkKKKKKKKkKKKKKKkKx.............................',
+    '............................xKKKKKHHHKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKx............................',
+    '...........................xKKKKKKKKKKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKKx...........................',
+    '...........................xKKKKkKKKKKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKKx...........................',
+    '..........................xKKKKKkKKKKKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKKKx..........................',
+    '..........................xKKKKKkKKKKKKKkKKKKKKKKkKKKKKKKkKKKKKKkKKKKx..........................',
+    '.........................xKKKKKKkKKKKKKKkKKKKKKKKkkKKKKKKkKKKKKKkKKKKKx.........................',
+    '.........................xKKKKKKkKKKKKKKkKKKKKKKKkkKKKKKKkKKKKKKkKKKKKx.........................',
+    '.........................xKKKKKKkKKKKKKKkKKKKKKKKkkKKKKKKkKKKKKKkkKKKKx.........................',
+    '........................xKKKKKKkkKKKKKKkkKKKKKKKKKKKKKKKKkkKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKKKKKKKKkkKKKKKKKKKKKKKKKKkkKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKKKKKKKKkHHKKKKKKKqqKKKKKKkkKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKdKKKKKKHssKKKKKKHssHKKKKKKHHKKKKKKKKKKKx........................',
+    '........................xKKKKKKKsHKKKKHsSsHKKKKKdSSqKKKKKHsdKKKKKKKKKKKx........................',
+    '........................xKKKKKKKSsKKKKKHHHKKKKKqSSSsKKKKKHqdHKKKKKKKKKKx........................',
+    '........................xKKKKKKKSSKKKKKKKKHHKKHsSSSSqKKKKKKKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKSSHKKHqdssssKKdSSSSSsHKHdqHKKKKKKKKKKKKx........................',
+    '........................xKKKKKKKSSsqdSSSSSssqHSSSSSSsHHsSSssdHKKKKKKKKKx........................',
+    '........................xKKKKKKKSskkdSSSSdkkdsSSSSSskxqSSssdkkKHKKKKKKKx........................',
+    '........................xKKKKKKKSskxkdSSdkxksSSSSSSskxkdSsdkxkddKKKKKKKx........................',
+    '........................xKKKKKKKSSdkxkddkxkdSSSSSSSSdkxkddkxkdssKKKKKKKx........................',
+    '........................xKKKKKKKSSSdkxxxxkdSSSSSSSSSSdkxxxxkdsssKKKKKKKx........................',
+    '........................xKKKKKKKSSSSdkxxkdSSSSSSSSSSSSdkxxkdssssKKKKKKKx........................',
+    '........................xKKKKKKKSSSSdkxxkdSSSSSSSSSSSSdkxxkdssssKKKKKKKx........................',
+    '........................xKKKKKKKSSSdkxxxxkdSSSSSSSSSSdkxxxxkdsssKKKKKKKx........................',
+    '.........................xKKKKKKSSdkxkddkxkdSSSSSSSSdkxkddkxkdssKKKKKKx.........................',
+    '.........................xKKKKKKSskxkdSSdkxksSSSSSSskxkdssdkxkdsKKKKKKx.........................',
+    '.........................xKKKHdpCsHKdSSSSdkksSSSSSSskkdssssdkHsCpdHKKKx.........................',
+    '.....................dd...xKdpssCCCsSSSSSSssSSSSSSSSssSssssssCCCsspdKx...dd.....................',
+    '...................ddFFdd.xHssssCCCCSSSSSSSSSSCssCSSSSSsssssCCCCssssHx.ddFFdd...................',
+    '...................dFFFFFd.xssssCCCCSSSSSSSSSsMMMMsSSSssssssCCCCssspx.dFFFFFd...................',
+    '..................dFFFFFFSdHdpssCCCSSSSSSSSSSMMMMMMSSSsssssssCCCsspdHdSFFFFFFd..................',
+    '..................dFFFFFFSSSqHddCSSSSSSSSSSSsMMMMMMsSSsssssssssCddHqSSSFFFFFFd..................',
+    '...................dFFFFFSSSSqKKSSSSSSSSSSSSsMMMMMMsSSssssssssssKKqSSSSFFFFFd...................',
+    '...................ddFFFFSSSSSqKdSSSSSSSSSSSSMMMMMMSSssssssssssqKqSSSSSFFFFdd...................',
+    '.....................dFSSSSSSSSdKdSSSSSSSSSSSsMMMMsSSsssssssssdKdSSSSSSSSFd.....................',
+    '......................dSSSSSSSSSsHqSSSSSSSSSSSCssCSSSssssssssHHsSSSSSSSSSd......................',
+    '.......................dSSSSSSSSSSHHSSSSSSSSSSSSSSSSSssssssSHHSSSSSSSSSSd.......................',
+    '........................dSSSSSSSSSSCBBFSSSSSSSSSSSSSsssssSFBpSSSSSSSSSSd........................',
+    '.........................ddSSSSSSSSSFBBBFSSSSSSSSSSSssSSBBBFSSSSSSSSSdd.........................',
+    '...........................dSSSSSSSSSQQBBBBBBBBBBBBBBBBBBQQSSSSSSSSSd...........................',
+    '............................dSSSSSSSSQQPPPPPPPPCCPPPPPPPPQQSSSSSSSSd............................',
+    '.............................dSSSSSSSQQQPPPPPPpMMpPPPPPPQQQSSSSSSSd.............................',
+    '..............................dSSSSSSQQQPPPPPpRRrrpPPPPPQQQSSSSSSd..............................',
+    '...............................dSSSSQQQPPPPPCMRRrrMCPPPPPQQQSSSSd...............................',
+    '...............................qPSSQQQQPPPPPCMrrrrMCPPPPPPQQQSCpq...............................',
+    '..............................qPPPPPPPPPPPPPPprrrrpPPPPPPCpppppppq..............................',
+    '..............................qPPPPPPPPPPPPPPPpMMpPPPPPPPCpppppppq..............................',
+    '.............................qPPPPPPPPPPPPPPPPPCCPPPPPPPPCppppppppq.............................',
+    '.............................qPPPPPPPPPPPPPPPPPPPPPPPPPPPPppppppppq.............................',
+    '.............................qPPPPPPPPPPPPPPPPPPPPPPPPPPPPpppppppppq............................',
+    '............................qPPPPPPPPPPPPPPPPPPPPPPPPPPPPPCppppppppq............................',
+    '............................qPPPPPPPPQQPPPPPPPPPPPPPPPPPPQQppppppppq............................',
+    '...........................qPPPPPPPPPQQPPPPPPPPPPPPPPPPPPQQpppppppppq...........................',
+    '...........................qPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPpppppppppq...........................',
+    '..........................qPPPPPPPPPPPPPPPPPPPPQQPPPPPPPPPPppppppppppq..........................',
+    '..........................qPPPPPPPPPPPPPPPPPPPPQQPPPPPPPPPPppppppppppq..........................',
+    '.........................dCCCCCCCCCCCCCCCPPPPCCPPCCPPPPCCCCpppppppppppq.........................',
+    '.........................qqqqqqqqqqqqqqqqpQQpqqqqqqpQQpqqqqqqqqqqqqqqqq.........................',
+    '........................qqqqqqqqqqqqqqqqqpQQpqqqqqqpQQpqqqqqqqqqqqqqqqqq........................',
+    '........................qqqqqqqqqqqqqqqqqqddqqqqqqqqddqqqqqqqqqqqqqqqqqq........................',
+    '.........................qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq.........................',
+    '................................dSSSSssd.................dSSSSssd...............................',
+    '................................dSSSSssd.................dSSSSssd...............................',
+    '................................dSSSSssd.................dSSSSssd...............................',
+    '................................dSSSSssd.................dSSSSssd...............................',
+    '................................dSSSSssd.................dSSSSssd...............................',
+    '................................dSSSSssd.................dSSSSssd...............................',
+    '...............................bWWWWWBBBb...............bWWWWWBBBb..............................',
+    '..............................bWWWWWWWWWWb.............bWWWWWWWWWWb.............................',
+    '.............................bWWWWWWWWWWWWb...........bWWWWWWWWWWWWb............................',
+    '.............................bWWWWWWWWWWWWb...........bWWWWWWWWWWWWb............................',
+    '.............................bWWWWWWWWWWWWb...........bWWWWWWWWWWWWb............................',
+    '.............................bbbbbbbbbbbbbb...........bbbbbbbbbbbbbb............................',
+    '.............................bbbbbbbbbbbbbb...........bbbbbbbbbbbbbb............................',
+    '.............................bbbbbbbbbbbbbb...........bbbbbbbbbbbbbb............................',
+    '..............................bbbbbbbbbbbb.............bbbbbbbbbbbb.............................',
+  ],
+};
+
+/*
+ * o = { facing, state('idle'|'run'|'jump'|'hurt'), t, big, blink }
+ * (x, y, w, h) 는 충돌 상자. 도트 그림은 그 상자 가운데/바닥에 맞춰 그립니다.
+ *
+ * 프레임 세트에 넣을 수 있는 이름
+ *   idle           서 있기 (필수)
+ *   blink          눈 감은 서 있기 (없으면 깜빡이지 않습니다)
+ *   walk1 ~ walk4  걷기 (있는 만큼 순서대로 돌립니다)
+ *   jump           올라갈 때
+ *   fall           내려올 때 (없으면 jump 를 씁니다)
+ *   hurt           맞았을 때
+ */
+function drawNayul(ctx, x, y, w, h, o) {
+  const set = (o.big && typeof NAYUL_BIG !== 'undefined') ? NAYUL_BIG : NAYUL;
+  const walk = [set.walk1, set.walk2, set.walk3, set.walk4].filter(Boolean);
+
+  let grid;
+  if (o.state === 'hurt') grid = set.hurt || set.idle;
+  else if (o.state === 'jump') grid = (o.vy > 1 && set.fall) ? set.fall : (set.jump || set.idle);
+  else if (o.state === 'run' && walk.length) grid = walk[Math.floor(o.t / 6) % walk.length];
+  else if (o.blink && set.blink) grid = set.blink;
+  else grid = set.idle;
+
+  const scale = Math.max(2, Math.round(h / set.idle.length));
+  const sw = grid[0].length * scale;
+  const sh = grid.length * scale;
+  const px = x + w / 2 - sw / 2;
+  const py = y + h - sh;
+
+  /* 그림자 */
+  ctx.fillStyle = 'rgba(0,0,0,.18)';
+  ctx.beginPath();
+  ctx.ellipse(x + w / 2, y + h, w * 0.5, 3.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  drawPixels(ctx, grid, px, py, scale, o.facing < 0);
+
+  /* 아이템 먹어 커졌을 때: 머리 위 반짝이는 별 */
+  if (o.big && set === NAYUL) {
+    drawStar(ctx, x + w / 2, py - 6 + Math.sin(o.t * 0.12) * 2, 6, '#ffe66d');
+  }
+}
+
+
 /* ===== js/entities.js ===== */
 /* ============================================================
  *  물리 / 충돌 / 등장인물
@@ -1136,7 +2572,7 @@ function overlaps(a, b) {
 class Player {
   constructor(x, y) {
     this.big = false;
-    this.w = 22; this.h = 48;
+    this.w = 24; this.h = 56;
     this.x = x; this.y = y - this.h;
     this.vx = 0; this.vy = 0;
     this.facing = 1;
@@ -1155,8 +2591,8 @@ class Player {
   setBig(big) {
     const bottom = this.y + this.h;
     this.big = big;
-    this.w = big ? 28 : 22;
-    this.h = big ? 72 : 48;
+    this.w = big ? 28 : 24;
+    this.h = big ? 64 : 56;
     this.y = bottom - this.h;
   }
 
@@ -1252,6 +2688,7 @@ class Player {
       facing: this.facing,
       state: this.state,
       t: this.t,
+      vy: this.vy,
       big: this.big,
       blink: this.blinkTimer < 0,
     });
@@ -1875,10 +3312,9 @@ const Game = {
     ctx.fillStyle = 'rgba(10,12,24,.55)';
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
 
-    drawNayul(ctx, VIEW_W / 2 - 50, 100, 100, 120, {
-      facing: 1, state: 'idle', t: this.t, big: false,
-      blink: Math.floor(this.t / 90) % 12 === 0,
-    });
+    const blinking = Math.floor(this.t / 22) % 9 === 0;
+    const art = blinking && NAYUL96.blink ? NAYUL96.blink : NAYUL96.idle;
+    drawPixels(ctx, art, VIEW_W / 2 - 96, 46, 2, false);
 
     ctx.textAlign = 'center';
     ctx.fillStyle = '#fff';
