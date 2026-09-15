@@ -30,16 +30,19 @@ const PAL96 = {
   W: '#ffffff', B: '#e9ecf6', b: '#a9aec6',                  /* 흰옷 · 신발 */
   R: '#ff7a72', r: '#cf2038',                                /* 머리끈 */
   E: '#0b0708', C: '#ff8fa4', M: '#c33a4f',                  /* 눈 · 볼 · 입 */
+  X: '#1b1420',                                              /* 외곽선 (타일과 같은 계열) */
 };
 
 /* 외곽선은 검정 하나가 아니라 "그 부위의 가장 어두운 색"으로 두릅니다 */
+/* 마리오 월드처럼 실루엣 전체를 같은 어두운 색으로 두릅니다.
+   (배경 타일도 같은 방식이라 캐릭터가 배경에 묻히지 않습니다) */
 const OUTLINE = {
-  F: 'd', S: 'd', s: 'd', d: 'd',
-  H: 'x', K: 'x', k: 'x', x: 'x',
-  Q: 'q', P: 'q', p: 'q', q: 'q',
-  W: 'b', B: 'b', b: 'b',
-  R: 'r', r: 'r',
-  E: 'E', C: 'd', M: 'M',
+  F: 'X', S: 'X', s: 'X', d: 'X',
+  H: 'X', K: 'X', k: 'X', x: 'X',
+  Q: 'X', P: 'X', p: 'X', q: 'X',
+  W: 'X', B: 'X', b: 'X',
+  R: 'X', r: 'X',
+  E: 'E', C: 'X', M: 'M',
 };
 
 /* ── 캐릭터 그리기 (96칸 좌표계) ────────────────────────────
@@ -368,12 +371,13 @@ function drawNayul(g, P) {
 const POSES = {
   idle:  { legN: 0.05, legF: -0.06, armN: 0.05, armF: -0.05, bodyY: 0 },
   blink: { legN: 0.05, legF: -0.06, armN: 0.05, armF: -0.05, bodyY: 0, eyes: 'closed' },
-  /* 걷기 — 블로그 가이드대로
-     ① 다리 벌림(앞발이 가까운 쪽)  ② 모음(바운드로 몸이 위로)  ③ 다리 벌림(반대)
-     walk4 는 ② 와 같은 그림이라 1-2-3-2 순서로 돕니다. */
-  walk1: { legN:  0.40, legF: -0.40, armN: -0.34, armF:  0.34, bodyY: 1 },
+  /* 걷기 — ① 다리 벌림  ② 모음  ③ 반대로 벌림 (walk4 = ②, 1-2-3-2 순서)
+     바운드(몸이 위아래로 흔들림)는 그림 안에서 처리하지 않고, 그릴 때
+     화면에서 1픽셀만 내립니다(js/sprites/player.js). 도트 한 칸(2픽셀)을
+     통째로 움직이면 몸이 덜덜 떠는 것처럼 보이기 때문입니다. */
+  walk1: { legN:  0.40, legF: -0.40, armN: -0.34, armF:  0.34, bodyY: 0 },
   walk2: { legN:  0.06, legF: -0.14, armN:  0.04, armF: -0.04, bodyY: 0 },
-  walk3: { legN: -0.40, legF:  0.40, armN:  0.34, armF: -0.34, bodyY: 1 },
+  walk3: { legN: -0.40, legF:  0.40, armN:  0.34, armF: -0.34, bodyY: 0 },
   walk4: { legN:  0.06, legF: -0.14, armN:  0.04, armF: -0.04, bodyY: 0 },
   /* 미끄러지며 돌아서기 — 앞발을 버티고 팔을 뒤로 젖힙니다 */
   skid:  { legN: -0.55, legF:  0.20, armN: -0.95, armF:  0.55, bodyY: 0, mouth: 'open' },
