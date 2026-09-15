@@ -43,11 +43,13 @@ const SCORE = {
   COIN: 100,
   STOMP: 200,
   POWERUP: 500,
+  SUCK: 200,          // 청소기로 빨아들였을 때
   BRICK: 50,
   TIME_BONUS: 10,
 };
 
 /* 타일 종류 */
-const SOLID = '#=B?!X';   // 못 지나가는 블록
+const SOLID = '#=B?!*X';  // 못 지나가는 블록
 const ONEWAY = '-';       // 아래에서 통과되는 얇은 발판
-const HAZARD = '^';       // 가시
+const HAZARD = '^';       // 가시(집에서는 레고 조각)
+const POWER_BLOCK = '*';  // 스테이지 파워업이 나오는 블록

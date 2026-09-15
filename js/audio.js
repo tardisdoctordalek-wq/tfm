@@ -32,7 +32,7 @@ const Sound = {
   toggleMute() {
     this.muted = !this.muted;
     try { localStorage.setItem('nayul_muted', this.muted ? '1' : '0'); } catch (e) {}
-    if (this.muted) this.stopBgm();
+    if (this.muted) { this.stopBgm(); this.vacuumOff(); }
     else if (this.bgmOn) this.startBgm();
     return this.muted;
   },
@@ -78,6 +78,40 @@ const Sound = {
   die()     { [660, 560, 460, 330, 220].forEach((f, i) => this.tone(f, 0.2, 'square', 0.4, i * 0.12)); },
   clear()   { [523, 659, 784, 1046, 784, 1046, 1318].forEach((f, i) => this.tone(f, 0.18, 'square', 0.38, i * 0.14)); },
   start()   { [523, 784, 1046].forEach((f, i) => this.tone(f, 0.12, 'square', 0.4, i * 0.09)); },
+
+  /* 청소기 "웅~" 하는 모터 소리.
+     버튼을 누르고 있는 동안 계속 나야 해서, 한 번 만든 노드를 켜고 끕니다.
+     (프레임마다 noise() 를 새로 만들면 소리가 지직거리고 CPU 도 먹습니다.) */
+  vacuumOn() {
+    if (!this.ctx || this.muted || this._vacNodes) return;
+    const osc = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    const lp = this.ctx.createBiquadFilter();
+    osc.type = 'sawtooth';
+    osc.frequency.value = 78;
+    lp.type = 'lowpass';
+    lp.frequency.value = 900;
+    g.gain.value = 0;
+    g.gain.linearRampToValueAtTime(0.16, this.ctx.currentTime + 0.08);
+    osc.connect(lp).connect(g).connect(this.master);
+    osc.start();
+    this._vacNodes = { osc, g };
+  },
+
+  vacuumOff() {
+    if (!this._vacNodes) return;
+    const { osc, g } = this._vacNodes;
+    this._vacNodes = null;
+    try {
+      g.gain.cancelScheduledValues(this.ctx.currentTime);
+      g.gain.setValueAtTime(g.gain.value, this.ctx.currentTime);
+      g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.1);
+      osc.stop(this.ctx.currentTime + 0.14);
+    } catch (e) {}
+  },
+
+  /* 적이 통 안으로 빨려 들어간 순간 */
+  suck()    { this.tone(300, 0.14, 'square', 0.3, 0, 1100); this.noise(0.12, 0.18); },
 
   /* ── 배경음: 밝은 8비트 멜로디 반복 ── */
   MELODY: [

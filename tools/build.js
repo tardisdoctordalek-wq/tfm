@@ -23,6 +23,7 @@ const scripts = [
   'js/sprites/items.js',
   'js/sprites/enemies.js',
   'js/sprites/player.js',
+  'js/powers.js',
   'js/entities.js',
   'js/game.js',
 ];

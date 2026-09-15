@@ -211,12 +211,187 @@ const T_BUSH = [
 ];
 
 
+/* ============================================================
+ *  1스테이지 — 집 안 타일
+ *  기존 재질 슬롯을 집 물건으로 바꿔 씁니다.
+ *    흙   → 마룻바닥      돌   → 벽 타일
+ *    벽돌 → 서랍장        가시 → 레고 조각
+ *    구름 → 벽시계        수풀 → 화분
+ * ========================================================== */
+
+/* 마룻바닥 (집 테마의 # 타일).
+ * 처음엔 타일마다 세로 테두리 + 4도트 판자로 만들었더니 마루가 아니라
+ * 벽돌 격자로 보였습니다(캡처로 확인). 판자를 8도트로 키우고 세로선을 빼고
+ * 이음매를 엇갈리게 두니 마루로 읽힙니다. */
+const T_FLOOR = [
+  '3333333333333333',
+  '1111311111111111',
+  '2222322222222222',
+  '2222322222222222',
+  '2222322222222222',
+  '2222322222222222',
+  '2222322222222222',
+  '2222322222222222',
+  '3333333333333333',
+  '1111111111131111',
+  '2222222222232222',
+  '2222222222232222',
+  '2222222222232222',
+  '2222222222232222',
+  '2222222222232222',
+  '2222222222232222',
+];
+
+/* 바닥 윗면 — 집에서는 잔디 대신 걸레받이 / 러그 테두리 */
+const T_TRIM = [
+  '5555555555555555',
+  '5555555555555555',
+  '6666666666666666',
+  '7777777777777777',
+  '8888888888888888',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+];
+
+/* 벽 타일 (집 테마의 = 타일) */
+const T_WALLTILE = [
+  '4444444444444444',
+  '4111111111111114',
+  '4111111111111114',
+  '4122222222222234',
+  '4122222222222234',
+  '4122222222222234',
+  '4122222222222234',
+  '4122222222222234',
+  '4122222222222234',
+  '4122222222222234',
+  '4122222222222234',
+  '4122222222222234',
+  '4122222222222234',
+  '4133333333333334',
+  '4333333333333334',
+  '4444444444444444',
+];
+
+/* 서랍장 — 큰 나율이는 부술 수 있습니다 (집 테마의 B 타일) */
+const T_DRAWER = [
+  '4444444444444444',
+  '4111111111111114',
+  '4122222222222234',
+  '4122244444222234',
+  '4122222222222234',
+  '4122222222222234',
+  '4133333333333334',
+  '4444444444444444',
+  '4111111111111114',
+  '4122222222222234',
+  '4122244444222234',
+  '4122222222222234',
+  '4122222222222234',
+  '4133333333333334',
+  '4333333333333334',
+  '4444444444444444',
+];
+
+/* 레고 조각 — 밟으면 아픕니다 (집 테마의 ^ 타일) */
+const T_LEGO = [
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '.11...11...11...',
+  '.11...11...11...',
+  '1111111111111111',
+  '1222222222222221',
+  '1222222222222221',
+  '1333333333333331',
+  '3333333333333333',
+  '4444444444444444',
+];
+
+/* 파워업 블록 (* 타일). 네 귀퉁이 리벳은 ? · ! 블록과 같은 장식입니다 */
+const T_POWER = [
+  'oooooooooooooooo',
+  'oaaaaaaaaaaaaaao',
+  'oaoaaaaaaaaaaoao',
+  'oaabbbbbwbbbbcco',
+  'oaabbbbbwbbbbcco',
+  'oaabbbwwwwwbbcco',
+  'oaabbwwwwwwwbcco',
+  'oaabwwwwwwwwwcco',
+  'oaabbwwwwwwwbcco',
+  'oaabbbwwwwwbbcco',
+  'oaabbbbbwbbbbcco',
+  'oaabbbbbwbbbbcco',
+  'oaabbbbbbbbbbcco',
+  'ococcccccccccoco',
+  'occcccccccccccco',
+  'oooooooooooooooo',
+];
+
+/* 벽시계 (집 테마의 c 장식). 원은 손으로 못 찍어서 계산으로 만들었습니다 */
+const T_CLOCK = [
+  '.......44.......',
+  '....44444444....',
+  '...4422222244...',
+  '..442255552244..',
+  '.44255588555244.',
+  '.42255588555224.',
+  '.42555588555524.',
+  '4425555888885244',
+  '4425555588885244',
+  '.43555555555534.',
+  '.43366666666334.',
+  '.44366666666344.',
+  '..443366663344..',
+  '...4433333344...',
+  '....44444444....',
+  '.......44.......',
+];
+
+/* 화분 (집 테마의 t 장식). 좌우 대칭이라 반쪽을 뒤집어 만들었습니다 */
+const T_PLANT = [
+  '................',
+  '......8888......',
+  '....88555588....',
+  '...8855555588...',
+  '..885555555588..',
+  '..855556655558..',
+  '..855666666558..',
+  '...8866666688...',
+  '....88666688....',
+  '.....887788.....',
+  '......8778......',
+  '..111111111111..',
+  '..122222222221..',
+  '..122222222221..',
+  '..133333333331..',
+  '..144444444441..',
+];
+
+
 /* 물음표·아이템 블록은 테마와 상관없이 늘 같은 색입니다 */
 const PAL_QUESTION = { '.': null, o: '#2a1a08', a: '#ffe066', b: '#ffc022', c: '#d18a10', w: '#ffffff', d: '#8a5a08' };
 const PAL_QUESTION_ON = { '.': null, o: '#2a1a08', a: '#fff4b0', b: '#ffd451', c: '#e0a020', w: '#ffffff', d: '#8a5a08' };
 const PAL_ITEM = { '.': null, o: '#2a1208', a: '#ffb070', b: '#ff7a2a', c: '#c94a12', w: '#fff0a8', d: '#8a3a08' };
 const PAL_ITEM_ON = { '.': null, o: '#2a1208', a: '#ffd0a0', b: '#ff9a4a', c: '#e06020', w: '#ffffff', d: '#8a3a08' };
 const PAL_CLOUD = { '.': null, W: '#ffffff', B: '#ffffff', b: '#c8d8f0' };
+/* 파워 블록은 민트색이라 노란 ? 블록·주황 ! 블록과 한눈에 구분됩니다 */
+const PAL_POWER    = { '.': null, o: '#10283a', a: '#b8f4ff', b: '#4fc8e8', c: '#2a7fa8', w: '#ffffff' };
+const PAL_POWER_ON = { '.': null, o: '#10283a', a: '#e8fdff', b: '#7fdcf2', c: '#3f9fc8', w: '#ffffff' };
 
 /* 스테이지 테마 — 재질마다 4단 램프 */
 const THEME = {
@@ -230,6 +405,19 @@ const THEME = {
     bush:  ['#b6f05e', '#6ec62e', '#3f8f1c', '#1a3f0c'],
     sky:   ['#2f8fff', '#4c9fff', '#6fb4ff', '#98caff', '#c4e2ff'],
     hill:  ['#49a832', '#388a28', '#245f19'],
+  },
+  /* 1스테이지 — 집 안.
+     아침 햇살이 든 거실 색입니다. 벽지는 연한 크림, 바닥은 따뜻한 나무. */
+  house: {
+    dirt:  ['#e8c48a', '#c99a5c', '#8f6434', '#3a2412'],   // 마룻바닥
+    grass: ['#ffd9e4', '#f0a8bf', '#b0708a', '#3a2030'],   // 바닥 러그 테두리
+    stone: ['#dff5ea', '#a8ddc4', '#6ba88c', '#22382e'],   // 수납장·싱크대 (연한 민트색 가구)
+    brick: ['#ffd2b8', '#e89a72', '#a6613f', '#2e160c'],   // 서랍장
+    wood:  ['#ffeec4', '#f5b95e', '#a86f18', '#241203'],   // 선반(얇은 발판) — 배경 가구보다 밝고 진하게
+    spike: ['#ff9a9a', '#e64545', '#a01f1f', '#380c0c'],   // 레고 조각
+    bush:  ['#bff09a', '#74c04e', '#417d2c', '#18300f'],   // 화분 잎
+    sky:   ['#fff6e8', '#fdeedb', '#fae4cb', '#f6d9bb', '#f0cdaa'],   // 벽지
+    hill:  ['#dcc3b2', '#c9ab97', '#ad8d79'],              // 배경 가구 (채도를 낮춰 뒤로 물러나게)
   },
   cave: {
     dirt:  ['#9b7fd0', '#6a55a0', '#43336c', '#160f24'],
@@ -259,19 +447,28 @@ const TS = 2;   /* 타일 도트 배율 — 캐릭터와 같은 크기를 유지
 
 function drawTile(ctx, ch, px, py, th, t) {
   const c = THEME[th] || THEME.day;
+  const home = th === 'house';   /* 집에서는 같은 자리에 다른 물건이 놓입니다 */
   switch (ch) {
-    case '#': drawPixels(ctx, T_DIRT, px, py, TS, false, tonePal(c.dirt, c.grass)); break;
-    case '=': drawPixels(ctx, T_STONE, px, py, TS, false, tonePal(c.stone)); break;
-    case 'B': drawPixels(ctx, T_BRICK, px, py, TS, false, tonePal(c.brick)); break;
+    case '#': drawPixels(ctx, home ? T_FLOOR : T_DIRT, px, py, TS, false, tonePal(c.dirt, c.grass)); break;
+    case '=': drawPixels(ctx, home ? T_WALLTILE : T_STONE, px, py, TS, false, tonePal(c.stone)); break;
+    case 'B': drawPixels(ctx, home ? T_DRAWER : T_BRICK, px, py, TS, false, tonePal(c.brick)); break;
     case '?': drawPixels(ctx, T_QUESTION, px, py, TS, false,
                 Math.floor(t / 26) % 2 ? PAL_QUESTION_ON : PAL_QUESTION); break;
     case '!': drawPixels(ctx, T_ITEM, px, py, TS, false,
                 Math.floor(t / 20) % 2 ? PAL_ITEM_ON : PAL_ITEM); break;
+    case '*': drawPixels(ctx, T_POWER, px, py, TS, false,
+                Math.floor(t / 14) % 2 ? PAL_POWER_ON : PAL_POWER); break;
     case 'X': drawPixels(ctx, T_USED, px, py, TS, false, tonePal(c.brick)); break;
     case '-': drawPixels(ctx, T_PLATFORM, px, py, TS, false, tonePal(c.wood)); break;
-    case '^': drawPixels(ctx, T_SPIKE, px, py, TS, false, tonePal(c.spike)); break;
-    case 'c': drawPixels(ctx, T_CLOUD, px, py, TS, false, PAL_CLOUD); break;
-    case 't': drawPixels(ctx, T_BUSH, px, py + TILE - T_BUSH.length * TS, TS, false, tonePal(c.dirt, c.bush)); break;
+    case '^': drawPixels(ctx, home ? T_LEGO : T_SPIKE, px, py, TS, false, tonePal(c.spike)); break;
+    case 'c':
+      if (home) drawPixels(ctx, T_CLOCK, px, py, TS, false, tonePal(c.wood, c.stone));
+      else drawPixels(ctx, T_CLOUD, px, py, TS, false, PAL_CLOUD);
+      break;
+    case 't':
+      if (home) drawPixels(ctx, T_PLANT, px, py + TILE - T_PLANT.length * TS, TS, false, tonePal(c.dirt, c.bush));
+      else drawPixels(ctx, T_BUSH, px, py + TILE - T_BUSH.length * TS, TS, false, tonePal(c.dirt, c.bush));
+      break;
     default: break;
   }
 }
@@ -279,11 +476,15 @@ function drawTile(ctx, ch, px, py, th, t) {
 /* 흙 위가 비어 있으면 잔디를 덮습니다 */
 function drawGrassTop(ctx, px, py, th) {
   const c = THEME[th] || THEME.day;
-  drawPixels(ctx, T_GRASS, px, py, TS, false, tonePal(c.dirt, c.grass));
+  /* 집에서는 잔디가 아니라 평평한 걸레받이/러그 테두리가 올라옵니다 */
+  drawPixels(ctx, th === 'house' ? T_TRIM : T_GRASS, px, py, TS, false, tonePal(c.dirt, c.grass));
 }
 
-/* 골 깃발 */
-function drawGoal(ctx, px, py, t) {
+/* 골 — 테마마다 다릅니다.
+   집에서는 깃발이 아니라 현관문입니다. "아빠를 따라 집을 나선다"는
+   이야기가 골에서 읽혀야 하기 때문입니다. */
+function drawGoal(ctx, px, py, t, th) {
+  if (th === 'house') { drawDoorGoal(ctx, px, py, t); return; }
   const poleX = px + TILE / 2;
   const top = py - TILE * 4;
   ctx.fillStyle = '#20283a';
@@ -309,9 +510,186 @@ function drawGoal(ctx, px, py, t) {
   ctx.fillText('GOAL', poleX + 26 + wave / 2, top + 24);
 }
 
+/* 현관문 (1스테이지 골).
+   바닥(py + TILE)에 서 있고 높이는 4타일입니다. 깃발과 같은 자리를 차지하도록
+   맞춰 두었습니다 — 충돌 상자는 js/game.js 의 goalBox 가 정합니다. */
+function drawDoorGoal(ctx, px, py, t) {
+  const w = 60, h = TILE * 4;
+  const x = px + TILE / 2 - w / 2;
+  const y = py + TILE - h;
+
+  /* 문 뒤에서 새어 나오는 아침 햇살 — 아이가 "여기로 가면 된다"를 알아보게 */
+  ctx.save();
+  ctx.globalAlpha = 0.18 + Math.sin(t * 0.05) * 0.06;
+  ctx.fillStyle = '#ffe9a8';
+  ctx.fillRect(x - 14, y - 10, w + 28, h + 12);
+  ctx.restore();
+
+  ctx.fillStyle = '#3a2412';                      // 문틀 (최암부)
+  ctx.fillRect(x - 6, y - 8, w + 12, h + 8);
+  ctx.fillStyle = '#a07840';                      // 문틀 안쪽
+  ctx.fillRect(x - 3, y - 5, w + 6, h + 5);
+  ctx.fillStyle = '#c99a5c';                      // 문짝
+  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = '#e8c48a';                      // 위쪽 밝은 베벨
+  ctx.fillRect(x, y, w, 4);
+  ctx.fillRect(x, y, 4, h);
+  ctx.fillStyle = '#8f6434';                      // 아래·오른쪽 그늘
+  ctx.fillRect(x, y + h - 5, w, 5);
+  ctx.fillRect(x + w - 5, y, 5, h);
+
+  /* 문짝 패널 두 칸 */
+  for (let i = 0; i < 2; i++) {
+    const py2 = y + 14 + i * (h / 2 - 6);
+    ctx.fillStyle = '#8f6434';
+    ctx.fillRect(x + 10, py2, w - 20, h / 2 - 22);
+    ctx.fillStyle = '#e8c48a';
+    ctx.fillRect(x + 12, py2 + 2, w - 24, h / 2 - 26);
+    ctx.fillStyle = '#c99a5c';
+    ctx.fillRect(x + 14, py2 + 4, w - 28, h / 2 - 30);
+  }
+
+  /* 손잡이 */
+  ctx.fillStyle = '#3a2412';
+  ctx.beginPath(); ctx.arc(x + w - 12, y + h / 2, 6, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#ffd451';
+  ctx.beginPath(); ctx.arc(x + w - 12, y + h / 2, 4, 0, Math.PI * 2); ctx.fill();
+
+  /* 현관 매트 */
+  ctx.fillStyle = '#3a2030';
+  ctx.fillRect(x - 10, py + TILE - 8, w + 20, 8);
+  ctx.fillStyle = '#f0a8bf';
+  ctx.fillRect(x - 8, py + TILE - 6, w + 16, 5);
+
+  /* 안내 글자 */
+  ctx.save();
+  ctx.font = 'bold 15px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.strokeStyle = 'rgba(0,0,0,.55)';
+  ctx.lineWidth = 4;
+  ctx.fillStyle = '#fff';
+  const label = '아빠한테 가자!';
+  const ly = y - 20 + Math.round(Math.sin(t * 0.06) * 2);
+  ctx.strokeText(label, x + w / 2, ly);
+  ctx.fillText(label, x + w / 2, ly);
+  ctx.restore();
+}
+
+/* ── 집 안 배경 ──
+ * 언덕·구름 대신 벽지 / 액자 / 창문 / 가구 실루엣이 지나갑니다.
+ * 멀리 있는 것일수록 천천히 움직이게 해서 깊이를 만듭니다. */
+function drawHouseBackground(ctx, camX, c, t) {
+  const bands = c.sky;
+  const h = Math.ceil(VIEW_H / bands.length);
+  for (let i = 0; i < bands.length; i++) {
+    ctx.fillStyle = bands[i];
+    ctx.fillRect(0, i * h, VIEW_W, h);
+    if (i > 0) {
+      ctx.fillStyle = bands[i - 1];
+      for (let x = 0; x < VIEW_W; x += 8) {
+        ctx.fillRect(x, i * h, 4, 4);
+        ctx.fillRect(x + 4, i * h + 4, 4, 4);
+      }
+    }
+  }
+
+  const ground = VIEW_H - TILE * 2;
+
+  /* 벽지 세로 줄무늬 */
+  const stripeSpan = 96;
+  ctx.fillStyle = 'rgba(214, 160, 120, .16)';
+  for (let i = -1; i < VIEW_W / stripeSpan + 2; i++) {
+    const x = i * stripeSpan - ((camX * 0.35) % stripeSpan);
+    ctx.fillRect(x, 0, 22, ground);
+  }
+
+  /* 창문 — 밖은 이미 환합니다. 아빠가 벌써 나갔다는 뜻입니다. */
+  const winSpan = 940;
+  for (let i = 0; i < 3; i++) {
+    const x = ((i * winSpan - camX * 0.3) % (winSpan * 3) + winSpan * 3) % (winSpan * 3) - 200;
+    const y = 74, w = 150, hh = 130;
+    ctx.fillStyle = '#7a5334'; ctx.fillRect(x - 6, y - 6, w + 12, hh + 12);
+    ctx.fillStyle = '#c99a5c'; ctx.fillRect(x - 3, y - 3, w + 6, hh + 6);
+    ctx.fillStyle = '#bfe6ff'; ctx.fillRect(x, y, w, hh);
+    ctx.fillStyle = '#e8f6ff'; ctx.fillRect(x, y, w, hh / 2);
+    ctx.fillStyle = '#7a5334';
+    ctx.fillRect(x + w / 2 - 3, y, 6, hh);
+    ctx.fillRect(x, y + hh / 2 - 3, w, 6);
+  }
+
+  /* 액자 */
+  const frSpan = 330;
+  for (let i = 0; i < 8; i++) {
+    const span = frSpan * 8;
+    const x = ((i * frSpan - camX * 0.3) % span + span) % span - 150;
+    if (i % 3 === 1) continue;          /* 가끔 비워야 자연스럽습니다 */
+    const w = i % 2 ? 62 : 46, hh = i % 2 ? 46 : 58;
+    const y = 120 + (i % 3) * 26;
+    ctx.fillStyle = '#5c3a1c'; ctx.fillRect(x, y, w, hh);
+    ctx.fillStyle = '#e0b077'; ctx.fillRect(x + 3, y + 3, w - 6, hh - 6);
+    ctx.fillStyle = ['#ffd0e0', '#cfe6ff', '#d8f0c0'][i % 3];
+    ctx.fillRect(x + 7, y + 7, w - 14, hh - 14);
+  }
+
+  /* 가구 실루엣 — 바닥에 붙여 놓아야 방처럼 보입니다.
+     전체를 반투명하게 깔아 "밟을 수 있는 것"과 확실히 구분합니다.
+     (불투명하게 그렸더니 배경 식탁과 전경 선반이 똑같아 보였습니다) */
+  ctx.save();
+  ctx.globalAlpha = 0.5;
+  const furSpan = 520;
+  for (let i = 0; i < 8; i++) {
+    const span = furSpan * 8;
+    const x = ((i * furSpan - camX * 0.55) % span + span) % span - 260;
+    const kind = i % 3;
+    if (kind === 0) {
+      /* 소파 */
+      const w = 190, hh = 78, y = ground - hh;
+      ctx.fillStyle = c.hill[2]; ctx.fillRect(x, y, w, hh);
+      ctx.fillStyle = c.hill[0]; ctx.fillRect(x + 4, y + 4, w - 8, 26);
+      ctx.fillStyle = c.hill[1]; ctx.fillRect(x + 4, y + 30, w - 8, hh - 34);
+      ctx.fillStyle = c.hill[2];
+      ctx.fillRect(x, y + 20, 22, hh - 20);
+      ctx.fillRect(x + w - 22, y + 20, 22, hh - 20);
+      ctx.fillRect(x + w / 2 - 2, y + 30, 4, hh - 34);
+    } else if (kind === 1) {
+      /* 책장 */
+      const w = 120, hh = 160, y = ground - hh;
+      ctx.fillStyle = c.hill[2]; ctx.fillRect(x, y, w, hh);
+      ctx.fillStyle = c.hill[1]; ctx.fillRect(x + 5, y + 5, w - 10, hh - 10);
+      for (let k = 0; k < 3; k++) {
+        const sy = y + 12 + k * ((hh - 20) / 3);
+        ctx.fillStyle = c.hill[2];
+        ctx.fillRect(x + 5, sy + (hh - 20) / 3 - 6, w - 10, 6);
+        for (let b = 0; b < 5; b++) {
+          ctx.fillStyle = ['#d9a79c', '#9fb2cc', '#d8c9a0', '#a8c4ac', '#bfaacc'][(k + b) % 5];
+          ctx.fillRect(x + 10 + b * 20, sy, 14, (hh - 20) / 3 - 8);
+        }
+      }
+    } else {
+      /* 식탁 */
+      const w = 160, hh = 92, y = ground - hh;
+      ctx.fillStyle = c.hill[2]; ctx.fillRect(x, y, w, 14);
+      ctx.fillStyle = c.hill[0]; ctx.fillRect(x + 3, y + 2, w - 6, 6);
+      ctx.fillStyle = c.hill[1];
+      ctx.fillRect(x + 14, y + 14, 12, hh - 14);
+      ctx.fillRect(x + w - 26, y + 14, 12, hh - 14);
+    }
+  }
+
+  ctx.restore();
+
+  /* 벽과 바닥이 만나는 걸레받이 */
+  ctx.fillStyle = c.hill[2];
+  ctx.fillRect(0, ground - 10, VIEW_W, 10);
+  ctx.fillStyle = c.hill[0];
+  ctx.fillRect(0, ground - 10, VIEW_W, 3);
+}
+
 /* 배경 — 그라디언트 대신 색 계단 + 디더링, 테두리 있는 언덕 */
 function drawBackground(ctx, camX, th, t) {
   const c = THEME[th] || THEME.day;
+  if (th === 'house') { drawHouseBackground(ctx, camX, c, t); return; }
   const bands = c.sky;
   const h = Math.ceil(VIEW_H / bands.length);
   for (let i = 0; i < bands.length; i++) {

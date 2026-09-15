@@ -48,6 +48,7 @@ const Game = {
     const level = {
       grid, w: width, h: ROWS,
       theme: def.theme, name: def.name,
+      power: def.power || null,     /* `*` 블록에서 나올 파워업 종류 */
       goal: { col: width - 4, row: 13 },
     };
 
@@ -60,8 +61,8 @@ const Game = {
       for (let c = 0; c < width; c++) {
         const ch = grid[r][c];
         if (ch === 'P') { start = { col: c, row: r }; grid[r][c] = ' '; }
-        else if (ch === 'E') { this.entities.push(new Walker(c, r)); grid[r][c] = ' '; }
-        else if (ch === 'F') { this.entities.push(new Flyer(c, r)); grid[r][c] = ' '; }
+        else if (ch === 'E') { this.entities.push(new Walker(c, r, def.theme)); grid[r][c] = ' '; }
+        else if (ch === 'F') { this.entities.push(new Flyer(c, r, def.theme)); grid[r][c] = ' '; }
         else if (ch === 'o') { this.entities.push(new Coin(c, r)); grid[r][c] = ' '; }
         else if (ch === 'G') { level.goal = { col: c, row: r }; grid[r][c] = ' '; }
       }
@@ -75,6 +76,8 @@ const Game = {
     this.timeTick = 0;
     this.deadTimer = 0;
     this.clearTimer = 0;
+    if (Input.setActionLabel) Input.setActionLabel('액션');
+    Sound.vacuumOff();
   },
 
   startGame() {
@@ -102,7 +105,13 @@ const Game = {
         break;
 
       case 'play':
-        if (Input.pressed.pause) { this.state = 'pause'; Sound.pauseBgm(); break; }
+        if (Input.pressed.pause) {
+          this.state = 'pause';
+          this.player.actionOn = false;
+          Sound.vacuumOff();
+          Sound.pauseBgm();
+          break;
+        }
         if (Input.pressed.restart) { this.killPlayer(); break; }
         this.updatePlay();
         break;
@@ -183,6 +192,19 @@ const Game = {
           e.alive = false;
           this.collectCoin(e.x + e.w / 2, e.y);
         }
+      } else if (e instanceof PowerItem) {
+        if (overlaps(p, e)) {
+          e.alive = false;
+          const def = POWERS[e.kind];
+          this.score += SCORE.POWERUP;
+          Sound.powerup();
+          p.setPower(e.kind);
+          p.invuln = Math.max(p.invuln, 30);
+          this.effects.push(new FloatText(e.x + e.w / 2, e.y, def ? def.name + ' 획득!' : '+' + SCORE.POWERUP, '#b8f4ff'));
+          for (let i = 0; i < 14; i++) {
+            this.effects.push(new Particle(e.x + 14, e.y + 12, (Math.random() - 0.5) * 6, -Math.random() * 5, i % 2 ? '#b8f4ff' : '#4fc8e8', 4, 34));
+          }
+        }
       } else if (e instanceof HeartItem) {
         if (overlaps(p, e)) {
           e.alive = false;
@@ -197,6 +219,9 @@ const Game = {
         }
       } else if (e instanceof Walker || e instanceof Flyer) {
         if (e.dead || !overlaps(p, e)) continue;
+        /* 청소기로 빨아들이는 중인 적은 나율이를 해치지 않습니다.
+           이게 없으면 빨아들이다가 자기가 맞아 죽습니다. */
+        if (e.sucked) continue;
         /* 밟기 판정: 떨어지는 중이고, 이번 프레임 직전에 적보다 위에 있었으면 밟은 것 */
         const stomping = p.vy > 0.6 &&
           ((p.prevBottom !== undefined && p.prevBottom <= e.y + 10) ||
@@ -260,6 +285,19 @@ const Game = {
       this.bumps[key] = 10;
       this.effects.push(new PopCoin(px, py - 6));
       this.collectCoin(px, py - 10);
+    } else if (ch === '*') {
+      /* 스테이지 파워업. 어떤 물건이 나올지는 레벨 정의의 power 가 정합니다 */
+      const kind = this.level.power;
+      this.level.grid[r][c] = 'X';
+      this.bumps[key] = 10;
+      if (kind && POWERS[kind]) {
+        this.entities.push(new PowerItem(c, r - 1, kind));
+        Sound.powerup();
+      } else {
+        /* 파워가 정해지지 않은 스테이지에서는 하트가 나옵니다 (빈 블록 방지) */
+        this.entities.push(new HeartItem(c, r - 1));
+        Sound.powerup();
+      }
     } else if (ch === '!') {
       this.level.grid[r][c] = 'X';
       this.bumps[key] = 10;
@@ -290,7 +328,15 @@ const Game = {
   hurtPlayer() {
     const p = this.player;
     if (p.invuln > 0 || p.dying) return;
-    if (p.big) {
+    /* 3단 구조: 파워 → 큰 나율 → 작은 나율 → 죽음 (마리오 불꽃과 같은 방식) */
+    if (p.power) {
+      const lost = POWERS[p.power] ? POWERS[p.power].name : '파워';
+      p.setPower(null);
+      p.invuln = PHYS.INVULN;
+      Sound.hurt();
+      this.effects.push(new FloatText(p.x + p.w / 2, p.y, lost + '을 놓쳤어요!', '#b8f4ff'));
+      for (const e of this.entities) if (e.sucked) e.sucked = false;
+    } else if (p.big) {
       p.setBig(false);
       p.invuln = PHYS.INVULN;
       Sound.hurt();
@@ -309,6 +355,8 @@ const Game = {
     p.vx = 0;
     this.state = 'dead';
     this.deadTimer = 0;
+    p.actionOn = false;
+    Sound.vacuumOff();
     Sound.stopBgm();
     Sound.die();
   },
@@ -319,6 +367,8 @@ const Game = {
     this.clearTimer = 0;
     this.player.controllable = false;
     this.player.vx = 0;
+    this.player.actionOn = false;
+    Sound.vacuumOff();
     Sound.stopBgm();
     Sound.clear();
     for (let i = 0; i < 30; i++) {
@@ -363,7 +413,7 @@ const Game = {
     }
 
     /* 골 깃발 */
-    drawGoal(ctx, lv.goal.col * TILE, lv.goal.row * TILE, this.t);
+    drawGoal(ctx, lv.goal.col * TILE, lv.goal.row * TILE, this.t, lv.theme);
 
     /* 등장물 */
     this.entities.forEach((e) => e.draw(ctx));
@@ -418,6 +468,16 @@ const Game = {
 
     for (let i = 0; i < Math.min(this.lives, 6); i++) {
       drawHeart(ctx, VIEW_W - 150 - i * 26, 20, 9, 0);
+    }
+
+    /* 지금 가지고 있는 파워업 */
+    const pw = this.player && this.player.power ? POWERS[this.player.power] : null;
+    if (pw && pw.icon) {
+      drawPixels(ctx, pw.icon, 250, 4, 2, false);
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#b8f4ff';
+      ctx.font = 'bold 15px sans-serif';
+      ctx.fillText(pw.name, 286, 21);
     }
     ctx.restore();
   },

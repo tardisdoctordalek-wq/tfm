@@ -79,7 +79,23 @@ canvas {
 
 .btn.jump { background: rgba(255, 93, 143, .5); }
 .btn.run  { background: rgba(110, 192, 255, .4); font-size: 15px; }
+.btn.act  { background: rgba(79, 200, 232, .45); font-size: 15px; }
 .btn:active, .btn.on { transform: scale(.93); filter: brightness(1.4); }
+
+/* 버튼이 5개(←·→·액션·달리기·점프)라 좁은 화면에서는 줄여야 겹치지 않습니다.
+   68px × 5 + 여백 = 약 404px 이라 360px 폰에서 넘칩니다. */
+@media (max-width: 560px) {
+  #touch { padding: 8px; }
+  .pad-left, .pad-right { gap: 8px; }
+  .btn { width: 54px; height: 54px; font-size: 19px; }
+  .btn.run, .btn.act { font-size: 12px; }
+}
+
+@media (max-width: 400px) {
+  .pad-left, .pad-right { gap: 6px; }
+  .btn { width: 46px; height: 46px; font-size: 17px; }
+  .btn.run, .btn.act { font-size: 10px; }
+}
 
 @media (max-height: 480px) {
   #hint { display: none; }

@@ -86,7 +86,23 @@ canvas {
 
 .btn.jump { background: rgba(255, 93, 143, .5); }
 .btn.run  { background: rgba(110, 192, 255, .4); font-size: 15px; }
+.btn.act  { background: rgba(79, 200, 232, .45); font-size: 15px; }
 .btn:active, .btn.on { transform: scale(.93); filter: brightness(1.4); }
+
+/* 버튼이 5개(←·→·액션·달리기·점프)라 좁은 화면에서는 줄여야 겹치지 않습니다.
+   68px × 5 + 여백 = 약 404px 이라 360px 폰에서 넘칩니다. */
+@media (max-width: 560px) {
+  #touch { padding: 8px; }
+  .pad-left, .pad-right { gap: 8px; }
+  .btn { width: 54px; height: 54px; font-size: 19px; }
+  .btn.run, .btn.act { font-size: 12px; }
+}
+
+@media (max-width: 400px) {
+  .pad-left, .pad-right { gap: 6px; }
+  .btn { width: 46px; height: 46px; font-size: 17px; }
+  .btn.run, .btn.act { font-size: 10px; }
+}
 
 @media (max-height: 480px) {
   #hint { display: none; }
@@ -102,6 +118,7 @@ canvas {
         <button class="btn" data-key="right" aria-label="오른쪽">▶</button>
       </div>
       <div class="pad-right">
+        <button class="btn act" data-key="action" aria-label="액션">액션</button>
         <button class="btn run" data-key="run" aria-label="달리기">달리기</button>
         <button class="btn jump" data-key="jump" aria-label="점프">점프</button>
       </div>
@@ -110,7 +127,7 @@ canvas {
 
   <p id="hint">
     이동 <b>← →</b> (또는 A / D) · 점프 <b>스페이스 / ↑</b> · 달리기 <b>Shift</b> ·
-    일시정지 <b>P</b> · 소리 <b>M</b> · 다시하기 <b>R</b>
+    청소기 <b>C / F</b> · 일시정지 <b>P</b> · 소리 <b>M</b> · 다시하기 <b>R</b>
   </p>
 <script>
 /* ===== js/config.js ===== */
@@ -159,14 +176,16 @@ const SCORE = {
   COIN: 100,
   STOMP: 200,
   POWERUP: 500,
+  SUCK: 200,          // 청소기로 빨아들였을 때
   BRICK: 50,
   TIME_BONUS: 10,
 };
 
 /* 타일 종류 */
-const SOLID = '#=B?!X';   // 못 지나가는 블록
+const SOLID = '#=B?!*X';  // 못 지나가는 블록
 const ONEWAY = '-';       // 아래에서 통과되는 얇은 발판
-const HAZARD = '^';       // 가시
+const HAZARD = '^';       // 가시(집에서는 레고 조각)
+const POWER_BLOCK = '*';  // 스테이지 파워업이 나오는 블록
 
 
 /* ===== js/audio.js ===== */
@@ -204,7 +223,7 @@ const Sound = {
   toggleMute() {
     this.muted = !this.muted;
     try { localStorage.setItem('nayul_muted', this.muted ? '1' : '0'); } catch (e) {}
-    if (this.muted) this.stopBgm();
+    if (this.muted) { this.stopBgm(); this.vacuumOff(); }
     else if (this.bgmOn) this.startBgm();
     return this.muted;
   },
@@ -250,6 +269,40 @@ const Sound = {
   die()     { [660, 560, 460, 330, 220].forEach((f, i) => this.tone(f, 0.2, 'square', 0.4, i * 0.12)); },
   clear()   { [523, 659, 784, 1046, 784, 1046, 1318].forEach((f, i) => this.tone(f, 0.18, 'square', 0.38, i * 0.14)); },
   start()   { [523, 784, 1046].forEach((f, i) => this.tone(f, 0.12, 'square', 0.4, i * 0.09)); },
+
+  /* 청소기 "웅~" 하는 모터 소리.
+     버튼을 누르고 있는 동안 계속 나야 해서, 한 번 만든 노드를 켜고 끕니다.
+     (프레임마다 noise() 를 새로 만들면 소리가 지직거리고 CPU 도 먹습니다.) */
+  vacuumOn() {
+    if (!this.ctx || this.muted || this._vacNodes) return;
+    const osc = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    const lp = this.ctx.createBiquadFilter();
+    osc.type = 'sawtooth';
+    osc.frequency.value = 78;
+    lp.type = 'lowpass';
+    lp.frequency.value = 900;
+    g.gain.value = 0;
+    g.gain.linearRampToValueAtTime(0.16, this.ctx.currentTime + 0.08);
+    osc.connect(lp).connect(g).connect(this.master);
+    osc.start();
+    this._vacNodes = { osc, g };
+  },
+
+  vacuumOff() {
+    if (!this._vacNodes) return;
+    const { osc, g } = this._vacNodes;
+    this._vacNodes = null;
+    try {
+      g.gain.cancelScheduledValues(this.ctx.currentTime);
+      g.gain.setValueAtTime(g.gain.value, this.ctx.currentTime);
+      g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.1);
+      osc.stop(this.ctx.currentTime + 0.14);
+    } catch (e) {}
+  },
+
+  /* 적이 통 안으로 빨려 들어간 순간 */
+  suck()    { this.tone(300, 0.14, 'square', 0.3, 0, 1100); this.noise(0.12, 0.18); },
 
   /* ── 배경음: 밝은 8비트 멜로디 반복 ── */
   MELODY: [
@@ -300,7 +353,7 @@ const Sound = {
  * ========================================================== */
 
 const Input = {
-  down: { left: false, right: false, jump: false, run: false, crouch: false },
+  down: { left: false, right: false, jump: false, run: false, crouch: false, action: false },
   pressed: {},          // 이번 프레임에 "새로" 눌린 키
   anyPressed: false,
 
@@ -310,6 +363,13 @@ const Input = {
     ArrowDown: 'crouch', KeyS: 'crouch',
     Space: 'jump', ArrowUp: 'jump', KeyW: 'jump', KeyZ: 'jump',
     ShiftLeft: 'run', ShiftRight: 'run', KeyX: 'run',
+    KeyC: 'action', KeyF: 'action',   /* 청소기·자동차·침 같은 파워업 사용 */
+  },
+
+  /* 터치 액션 버튼의 글자를 파워업 이름으로 바꿉니다.
+     아이가 지금 무엇을 쓰는 버튼인지 알아볼 수 있게 하기 위해서입니다. */
+  setActionLabel(text) {
+    if (this._actionBtn) this._actionBtn.textContent = text || '액션';
   },
 
   init() {
@@ -364,6 +424,8 @@ const Input = {
       btn.addEventListener('contextmenu', (e) => e.preventDefault());
     });
 
+    this._actionBtn = pad.querySelector('.btn.act');
+
     // 캔버스를 탭해도 시작/진행되도록
     const canvas = document.getElementById('game');
     canvas.addEventListener('pointerdown', () => {
@@ -384,41 +446,51 @@ const Input = {
 /* ===== js/levels.js ===== */
 // 레벨 타일맵
 // ─────────────────────────────────────────────────────────────
-//  공백 : 빈 칸          #  : 땅(흙)           =  : 돌 블록
-//  B    : 부술 수 있는 벽돌   ?  : 코인 블록      !  : 아이템 블록
-//  -    : 얇은 발판(아래에서 통과)               ^  : 가시(위험)
+//  이야기 — 아빠가 출근하려고 집을 나섭니다. 나율이는 아빠가 보고 싶어서
+//           아빠 직장(한방병원)까지 혼자 여행을 떠납니다.
+//             1스테이지 집 안    · 청소기로 적을 빨아들입니다
+//             2스테이지 길거리   · (다음 작업) 자동차
+//             3스테이지 한방병원 · (다음 작업) 침 던지기
+// ─────────────────────────────────────────────────────────────
+//  공백 : 빈 칸          #  : 바닥(집에서는 마룻바닥)   =  : 단단한 블록
+//  B    : 부술 수 있는 블록(집에서는 서랍장)  ?  : 코인 블록   !  : 하트 블록
+//  *    : ★ 파워업 블록 — 아래 power 에 적은 물건이 나옵니다
+//  -    : 얇은 발판(아래에서 통과)            ^  : 위험(집에서는 레고 조각)
 //  o    : 코인            E  : 걸어다니는 적    F  : 날아다니는 적
-//  P    : 나율이 시작 위치  G  : 골 깃발         c/t: 구름/수풀(장식)
+//  P    : 나율이 시작 위치  G  : 골             c/t: 장식(집에서는 벽시계/화분)
 // ─────────────────────────────────────────────────────────────
 // 한 줄이 가로 한 칸(32px), 모두 16줄입니다. 자유롭게 고쳐서 새 스테이지를 만들어 보세요.
+// 고친 뒤에는 꼭 `node tools/check-level.js` 로 빠져나올 수 없는 곳이 없는지 확인하세요.
 
 const LEVELS = [
   {
-    name: "들판에서 출발!",
-    theme: "day",
+    name: "아빠, 기다려!",
+    theme: "house",
+    power: "vacuum",      /* ★ 블록에서 청소기가 나옵니다 */
     time: 300,
     rows: [
       "",
       "",
-      "        c                 c                    c                      c                     c                         c                     c",
+      "         c                        c                                           c                                             c",
       "",
       "",
       "",
       "",
-      "                                                  ?",
-      "                                                                               F       oo                        F",
-      "                                                          BBB!BBB           F                     oo                F           =",
-      "               ?!?        B?BB           E   oooo                  oooooo              ===      o --       B!BB                ==",
-      "                               ooo      ===  ----     --           ------             =====     -                             ===    ooo",
-      "                    ooo                ====                ooooo          ooooooo    =======                    oooooo       ====",
-      "   P        t           E             ===== t               E  E    ^^^^          t =========          E E t                =====  E  t      G",
-      "###############################   ####################   #######################################   ####################   ##############################",
-      "###############################   ####################   #######################################   ####################   ##############################",
+      "                                                                                            F",
+      "                                               F                    F                                     F                         F",
+      "                                                                                      oo",
+      "         BB*BB             B?B                      BB!BB               B?BB         ----               BB!BB               B?B",
+      "              oooo  oo            oo        ooo         oooo      oo           ooo              ooo         ooo     oo                oooo     oo",
+      "                   ---            ==       -----        -----                  ===            -----         ---     --                ----     ==",
+      "   P  t                 E        ====   E   ^^^   t        E          E        ===  E    E     ^^^    t       E        E        E E       t   ===       G",
+      "##############################################################   ###############################################   ###########################################",
+      "##############################################################   ###############################################   ###########################################",
     ],
   },
   {
-    name: "반짝이는 동굴",
-    theme: "cave",
+    name: "길을 건너서",
+    theme: "cave",      /* 다음 작업에서 길거리 테마로 교체 */
+    power: null,       /* 다음 작업에서 "car" */
     time: 320,
     rows: [
       "############################################################################################################################################################",
@@ -440,8 +512,9 @@ const LEVELS = [
     ],
   },
   {
-    name: "하늘 위의 성",
-    theme: "sky",
+    name: "아빠 병원 가는 길",
+    theme: "sky",       /* 다음 작업에서 한방병원 테마로 교체 */
+    power: null,       /* 다음 작업에서 "needle" */
     time: 360,
     rows: [
       "",
@@ -537,6 +610,27 @@ const PAL = {
   T: '#ffd0e0',            /* 하트 반짝임 */
   t: '#ff4f7b',
   u: '#8a1236',            /* 하트 테두리 */
+
+  /* ── 먼지뭉치 (1스테이지 집: 걷는 적) ──
+     회색 솜뭉치. 밤톨이(U N n j)와 색이 겹치지 않게 보라를 살짝 섞었습니다. */
+  A: '#ece8f2',            // 밝음
+  D: '#bdb5cc',            // 기본
+  I: '#8b8299',            // 그늘
+  J: '#3a3448',            // 최암부 / 테두리
+
+  /* ── 나방 (1스테이지 집: 나는 적) ──
+     밤에 형광등에 붙는 베이지색 나방. */
+  Z: '#f6e6c2',            // 밝음
+  e: '#d9ba8c',            // 기본
+  f: '#a8834f',            // 그늘
+  l: '#4a3320',            // 최암부 / 테두리
+
+  /* ── 청소기 (1스테이지 파워업) ──
+     민트색 본체. 집 테마의 나무·벽지 색과 안 겹치는 색으로 골랐습니다. */
+  i: '#b8f4ff',            // 밝음
+  m: '#4fc8e8',            // 기본
+  '+': '#2a7fa8',          // 그늘
+  '@': '#10283a',          // 최암부 / 테두리
 
   /* ── 공용 어두운 선 (눈매, 입매처럼 재질 램프로 안 되는 곳에만) ── */
   X: '#1b1420',
@@ -847,12 +941,187 @@ const T_BUSH = [
 ];
 
 
+/* ============================================================
+ *  1스테이지 — 집 안 타일
+ *  기존 재질 슬롯을 집 물건으로 바꿔 씁니다.
+ *    흙   → 마룻바닥      돌   → 벽 타일
+ *    벽돌 → 서랍장        가시 → 레고 조각
+ *    구름 → 벽시계        수풀 → 화분
+ * ========================================================== */
+
+/* 마룻바닥 (집 테마의 # 타일).
+ * 처음엔 타일마다 세로 테두리 + 4도트 판자로 만들었더니 마루가 아니라
+ * 벽돌 격자로 보였습니다(캡처로 확인). 판자를 8도트로 키우고 세로선을 빼고
+ * 이음매를 엇갈리게 두니 마루로 읽힙니다. */
+const T_FLOOR = [
+  '3333333333333333',
+  '1111311111111111',
+  '2222322222222222',
+  '2222322222222222',
+  '2222322222222222',
+  '2222322222222222',
+  '2222322222222222',
+  '2222322222222222',
+  '3333333333333333',
+  '1111111111131111',
+  '2222222222232222',
+  '2222222222232222',
+  '2222222222232222',
+  '2222222222232222',
+  '2222222222232222',
+  '2222222222232222',
+];
+
+/* 바닥 윗면 — 집에서는 잔디 대신 걸레받이 / 러그 테두리 */
+const T_TRIM = [
+  '5555555555555555',
+  '5555555555555555',
+  '6666666666666666',
+  '7777777777777777',
+  '8888888888888888',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+];
+
+/* 벽 타일 (집 테마의 = 타일) */
+const T_WALLTILE = [
+  '4444444444444444',
+  '4111111111111114',
+  '4111111111111114',
+  '4122222222222234',
+  '4122222222222234',
+  '4122222222222234',
+  '4122222222222234',
+  '4122222222222234',
+  '4122222222222234',
+  '4122222222222234',
+  '4122222222222234',
+  '4122222222222234',
+  '4122222222222234',
+  '4133333333333334',
+  '4333333333333334',
+  '4444444444444444',
+];
+
+/* 서랍장 — 큰 나율이는 부술 수 있습니다 (집 테마의 B 타일) */
+const T_DRAWER = [
+  '4444444444444444',
+  '4111111111111114',
+  '4122222222222234',
+  '4122244444222234',
+  '4122222222222234',
+  '4122222222222234',
+  '4133333333333334',
+  '4444444444444444',
+  '4111111111111114',
+  '4122222222222234',
+  '4122244444222234',
+  '4122222222222234',
+  '4122222222222234',
+  '4133333333333334',
+  '4333333333333334',
+  '4444444444444444',
+];
+
+/* 레고 조각 — 밟으면 아픕니다 (집 테마의 ^ 타일) */
+const T_LEGO = [
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '.11...11...11...',
+  '.11...11...11...',
+  '1111111111111111',
+  '1222222222222221',
+  '1222222222222221',
+  '1333333333333331',
+  '3333333333333333',
+  '4444444444444444',
+];
+
+/* 파워업 블록 (* 타일). 네 귀퉁이 리벳은 ? · ! 블록과 같은 장식입니다 */
+const T_POWER = [
+  'oooooooooooooooo',
+  'oaaaaaaaaaaaaaao',
+  'oaoaaaaaaaaaaoao',
+  'oaabbbbbwbbbbcco',
+  'oaabbbbbwbbbbcco',
+  'oaabbbwwwwwbbcco',
+  'oaabbwwwwwwwbcco',
+  'oaabwwwwwwwwwcco',
+  'oaabbwwwwwwwbcco',
+  'oaabbbwwwwwbbcco',
+  'oaabbbbbwbbbbcco',
+  'oaabbbbbwbbbbcco',
+  'oaabbbbbbbbbbcco',
+  'ococcccccccccoco',
+  'occcccccccccccco',
+  'oooooooooooooooo',
+];
+
+/* 벽시계 (집 테마의 c 장식). 원은 손으로 못 찍어서 계산으로 만들었습니다 */
+const T_CLOCK = [
+  '.......44.......',
+  '....44444444....',
+  '...4422222244...',
+  '..442255552244..',
+  '.44255588555244.',
+  '.42255588555224.',
+  '.42555588555524.',
+  '4425555888885244',
+  '4425555588885244',
+  '.43555555555534.',
+  '.43366666666334.',
+  '.44366666666344.',
+  '..443366663344..',
+  '...4433333344...',
+  '....44444444....',
+  '.......44.......',
+];
+
+/* 화분 (집 테마의 t 장식). 좌우 대칭이라 반쪽을 뒤집어 만들었습니다 */
+const T_PLANT = [
+  '................',
+  '......8888......',
+  '....88555588....',
+  '...8855555588...',
+  '..885555555588..',
+  '..855556655558..',
+  '..855666666558..',
+  '...8866666688...',
+  '....88666688....',
+  '.....887788.....',
+  '......8778......',
+  '..111111111111..',
+  '..122222222221..',
+  '..122222222221..',
+  '..133333333331..',
+  '..144444444441..',
+];
+
+
 /* 물음표·아이템 블록은 테마와 상관없이 늘 같은 색입니다 */
 const PAL_QUESTION = { '.': null, o: '#2a1a08', a: '#ffe066', b: '#ffc022', c: '#d18a10', w: '#ffffff', d: '#8a5a08' };
 const PAL_QUESTION_ON = { '.': null, o: '#2a1a08', a: '#fff4b0', b: '#ffd451', c: '#e0a020', w: '#ffffff', d: '#8a5a08' };
 const PAL_ITEM = { '.': null, o: '#2a1208', a: '#ffb070', b: '#ff7a2a', c: '#c94a12', w: '#fff0a8', d: '#8a3a08' };
 const PAL_ITEM_ON = { '.': null, o: '#2a1208', a: '#ffd0a0', b: '#ff9a4a', c: '#e06020', w: '#ffffff', d: '#8a3a08' };
 const PAL_CLOUD = { '.': null, W: '#ffffff', B: '#ffffff', b: '#c8d8f0' };
+/* 파워 블록은 민트색이라 노란 ? 블록·주황 ! 블록과 한눈에 구분됩니다 */
+const PAL_POWER    = { '.': null, o: '#10283a', a: '#b8f4ff', b: '#4fc8e8', c: '#2a7fa8', w: '#ffffff' };
+const PAL_POWER_ON = { '.': null, o: '#10283a', a: '#e8fdff', b: '#7fdcf2', c: '#3f9fc8', w: '#ffffff' };
 
 /* 스테이지 테마 — 재질마다 4단 램프 */
 const THEME = {
@@ -866,6 +1135,19 @@ const THEME = {
     bush:  ['#b6f05e', '#6ec62e', '#3f8f1c', '#1a3f0c'],
     sky:   ['#2f8fff', '#4c9fff', '#6fb4ff', '#98caff', '#c4e2ff'],
     hill:  ['#49a832', '#388a28', '#245f19'],
+  },
+  /* 1스테이지 — 집 안.
+     아침 햇살이 든 거실 색입니다. 벽지는 연한 크림, 바닥은 따뜻한 나무. */
+  house: {
+    dirt:  ['#e8c48a', '#c99a5c', '#8f6434', '#3a2412'],   // 마룻바닥
+    grass: ['#ffd9e4', '#f0a8bf', '#b0708a', '#3a2030'],   // 바닥 러그 테두리
+    stone: ['#dff5ea', '#a8ddc4', '#6ba88c', '#22382e'],   // 수납장·싱크대 (연한 민트색 가구)
+    brick: ['#ffd2b8', '#e89a72', '#a6613f', '#2e160c'],   // 서랍장
+    wood:  ['#ffeec4', '#f5b95e', '#a86f18', '#241203'],   // 선반(얇은 발판) — 배경 가구보다 밝고 진하게
+    spike: ['#ff9a9a', '#e64545', '#a01f1f', '#380c0c'],   // 레고 조각
+    bush:  ['#bff09a', '#74c04e', '#417d2c', '#18300f'],   // 화분 잎
+    sky:   ['#fff6e8', '#fdeedb', '#fae4cb', '#f6d9bb', '#f0cdaa'],   // 벽지
+    hill:  ['#dcc3b2', '#c9ab97', '#ad8d79'],              // 배경 가구 (채도를 낮춰 뒤로 물러나게)
   },
   cave: {
     dirt:  ['#9b7fd0', '#6a55a0', '#43336c', '#160f24'],
@@ -895,19 +1177,28 @@ const TS = 2;   /* 타일 도트 배율 — 캐릭터와 같은 크기를 유지
 
 function drawTile(ctx, ch, px, py, th, t) {
   const c = THEME[th] || THEME.day;
+  const home = th === 'house';   /* 집에서는 같은 자리에 다른 물건이 놓입니다 */
   switch (ch) {
-    case '#': drawPixels(ctx, T_DIRT, px, py, TS, false, tonePal(c.dirt, c.grass)); break;
-    case '=': drawPixels(ctx, T_STONE, px, py, TS, false, tonePal(c.stone)); break;
-    case 'B': drawPixels(ctx, T_BRICK, px, py, TS, false, tonePal(c.brick)); break;
+    case '#': drawPixels(ctx, home ? T_FLOOR : T_DIRT, px, py, TS, false, tonePal(c.dirt, c.grass)); break;
+    case '=': drawPixels(ctx, home ? T_WALLTILE : T_STONE, px, py, TS, false, tonePal(c.stone)); break;
+    case 'B': drawPixels(ctx, home ? T_DRAWER : T_BRICK, px, py, TS, false, tonePal(c.brick)); break;
     case '?': drawPixels(ctx, T_QUESTION, px, py, TS, false,
                 Math.floor(t / 26) % 2 ? PAL_QUESTION_ON : PAL_QUESTION); break;
     case '!': drawPixels(ctx, T_ITEM, px, py, TS, false,
                 Math.floor(t / 20) % 2 ? PAL_ITEM_ON : PAL_ITEM); break;
+    case '*': drawPixels(ctx, T_POWER, px, py, TS, false,
+                Math.floor(t / 14) % 2 ? PAL_POWER_ON : PAL_POWER); break;
     case 'X': drawPixels(ctx, T_USED, px, py, TS, false, tonePal(c.brick)); break;
     case '-': drawPixels(ctx, T_PLATFORM, px, py, TS, false, tonePal(c.wood)); break;
-    case '^': drawPixels(ctx, T_SPIKE, px, py, TS, false, tonePal(c.spike)); break;
-    case 'c': drawPixels(ctx, T_CLOUD, px, py, TS, false, PAL_CLOUD); break;
-    case 't': drawPixels(ctx, T_BUSH, px, py + TILE - T_BUSH.length * TS, TS, false, tonePal(c.dirt, c.bush)); break;
+    case '^': drawPixels(ctx, home ? T_LEGO : T_SPIKE, px, py, TS, false, tonePal(c.spike)); break;
+    case 'c':
+      if (home) drawPixels(ctx, T_CLOCK, px, py, TS, false, tonePal(c.wood, c.stone));
+      else drawPixels(ctx, T_CLOUD, px, py, TS, false, PAL_CLOUD);
+      break;
+    case 't':
+      if (home) drawPixels(ctx, T_PLANT, px, py + TILE - T_PLANT.length * TS, TS, false, tonePal(c.dirt, c.bush));
+      else drawPixels(ctx, T_BUSH, px, py + TILE - T_BUSH.length * TS, TS, false, tonePal(c.dirt, c.bush));
+      break;
     default: break;
   }
 }
@@ -915,11 +1206,15 @@ function drawTile(ctx, ch, px, py, th, t) {
 /* 흙 위가 비어 있으면 잔디를 덮습니다 */
 function drawGrassTop(ctx, px, py, th) {
   const c = THEME[th] || THEME.day;
-  drawPixels(ctx, T_GRASS, px, py, TS, false, tonePal(c.dirt, c.grass));
+  /* 집에서는 잔디가 아니라 평평한 걸레받이/러그 테두리가 올라옵니다 */
+  drawPixels(ctx, th === 'house' ? T_TRIM : T_GRASS, px, py, TS, false, tonePal(c.dirt, c.grass));
 }
 
-/* 골 깃발 */
-function drawGoal(ctx, px, py, t) {
+/* 골 — 테마마다 다릅니다.
+   집에서는 깃발이 아니라 현관문입니다. "아빠를 따라 집을 나선다"는
+   이야기가 골에서 읽혀야 하기 때문입니다. */
+function drawGoal(ctx, px, py, t, th) {
+  if (th === 'house') { drawDoorGoal(ctx, px, py, t); return; }
   const poleX = px + TILE / 2;
   const top = py - TILE * 4;
   ctx.fillStyle = '#20283a';
@@ -945,9 +1240,186 @@ function drawGoal(ctx, px, py, t) {
   ctx.fillText('GOAL', poleX + 26 + wave / 2, top + 24);
 }
 
+/* 현관문 (1스테이지 골).
+   바닥(py + TILE)에 서 있고 높이는 4타일입니다. 깃발과 같은 자리를 차지하도록
+   맞춰 두었습니다 — 충돌 상자는 js/game.js 의 goalBox 가 정합니다. */
+function drawDoorGoal(ctx, px, py, t) {
+  const w = 60, h = TILE * 4;
+  const x = px + TILE / 2 - w / 2;
+  const y = py + TILE - h;
+
+  /* 문 뒤에서 새어 나오는 아침 햇살 — 아이가 "여기로 가면 된다"를 알아보게 */
+  ctx.save();
+  ctx.globalAlpha = 0.18 + Math.sin(t * 0.05) * 0.06;
+  ctx.fillStyle = '#ffe9a8';
+  ctx.fillRect(x - 14, y - 10, w + 28, h + 12);
+  ctx.restore();
+
+  ctx.fillStyle = '#3a2412';                      // 문틀 (최암부)
+  ctx.fillRect(x - 6, y - 8, w + 12, h + 8);
+  ctx.fillStyle = '#a07840';                      // 문틀 안쪽
+  ctx.fillRect(x - 3, y - 5, w + 6, h + 5);
+  ctx.fillStyle = '#c99a5c';                      // 문짝
+  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = '#e8c48a';                      // 위쪽 밝은 베벨
+  ctx.fillRect(x, y, w, 4);
+  ctx.fillRect(x, y, 4, h);
+  ctx.fillStyle = '#8f6434';                      // 아래·오른쪽 그늘
+  ctx.fillRect(x, y + h - 5, w, 5);
+  ctx.fillRect(x + w - 5, y, 5, h);
+
+  /* 문짝 패널 두 칸 */
+  for (let i = 0; i < 2; i++) {
+    const py2 = y + 14 + i * (h / 2 - 6);
+    ctx.fillStyle = '#8f6434';
+    ctx.fillRect(x + 10, py2, w - 20, h / 2 - 22);
+    ctx.fillStyle = '#e8c48a';
+    ctx.fillRect(x + 12, py2 + 2, w - 24, h / 2 - 26);
+    ctx.fillStyle = '#c99a5c';
+    ctx.fillRect(x + 14, py2 + 4, w - 28, h / 2 - 30);
+  }
+
+  /* 손잡이 */
+  ctx.fillStyle = '#3a2412';
+  ctx.beginPath(); ctx.arc(x + w - 12, y + h / 2, 6, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#ffd451';
+  ctx.beginPath(); ctx.arc(x + w - 12, y + h / 2, 4, 0, Math.PI * 2); ctx.fill();
+
+  /* 현관 매트 */
+  ctx.fillStyle = '#3a2030';
+  ctx.fillRect(x - 10, py + TILE - 8, w + 20, 8);
+  ctx.fillStyle = '#f0a8bf';
+  ctx.fillRect(x - 8, py + TILE - 6, w + 16, 5);
+
+  /* 안내 글자 */
+  ctx.save();
+  ctx.font = 'bold 15px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.strokeStyle = 'rgba(0,0,0,.55)';
+  ctx.lineWidth = 4;
+  ctx.fillStyle = '#fff';
+  const label = '아빠한테 가자!';
+  const ly = y - 20 + Math.round(Math.sin(t * 0.06) * 2);
+  ctx.strokeText(label, x + w / 2, ly);
+  ctx.fillText(label, x + w / 2, ly);
+  ctx.restore();
+}
+
+/* ── 집 안 배경 ──
+ * 언덕·구름 대신 벽지 / 액자 / 창문 / 가구 실루엣이 지나갑니다.
+ * 멀리 있는 것일수록 천천히 움직이게 해서 깊이를 만듭니다. */
+function drawHouseBackground(ctx, camX, c, t) {
+  const bands = c.sky;
+  const h = Math.ceil(VIEW_H / bands.length);
+  for (let i = 0; i < bands.length; i++) {
+    ctx.fillStyle = bands[i];
+    ctx.fillRect(0, i * h, VIEW_W, h);
+    if (i > 0) {
+      ctx.fillStyle = bands[i - 1];
+      for (let x = 0; x < VIEW_W; x += 8) {
+        ctx.fillRect(x, i * h, 4, 4);
+        ctx.fillRect(x + 4, i * h + 4, 4, 4);
+      }
+    }
+  }
+
+  const ground = VIEW_H - TILE * 2;
+
+  /* 벽지 세로 줄무늬 */
+  const stripeSpan = 96;
+  ctx.fillStyle = 'rgba(214, 160, 120, .16)';
+  for (let i = -1; i < VIEW_W / stripeSpan + 2; i++) {
+    const x = i * stripeSpan - ((camX * 0.35) % stripeSpan);
+    ctx.fillRect(x, 0, 22, ground);
+  }
+
+  /* 창문 — 밖은 이미 환합니다. 아빠가 벌써 나갔다는 뜻입니다. */
+  const winSpan = 940;
+  for (let i = 0; i < 3; i++) {
+    const x = ((i * winSpan - camX * 0.3) % (winSpan * 3) + winSpan * 3) % (winSpan * 3) - 200;
+    const y = 74, w = 150, hh = 130;
+    ctx.fillStyle = '#7a5334'; ctx.fillRect(x - 6, y - 6, w + 12, hh + 12);
+    ctx.fillStyle = '#c99a5c'; ctx.fillRect(x - 3, y - 3, w + 6, hh + 6);
+    ctx.fillStyle = '#bfe6ff'; ctx.fillRect(x, y, w, hh);
+    ctx.fillStyle = '#e8f6ff'; ctx.fillRect(x, y, w, hh / 2);
+    ctx.fillStyle = '#7a5334';
+    ctx.fillRect(x + w / 2 - 3, y, 6, hh);
+    ctx.fillRect(x, y + hh / 2 - 3, w, 6);
+  }
+
+  /* 액자 */
+  const frSpan = 330;
+  for (let i = 0; i < 8; i++) {
+    const span = frSpan * 8;
+    const x = ((i * frSpan - camX * 0.3) % span + span) % span - 150;
+    if (i % 3 === 1) continue;          /* 가끔 비워야 자연스럽습니다 */
+    const w = i % 2 ? 62 : 46, hh = i % 2 ? 46 : 58;
+    const y = 120 + (i % 3) * 26;
+    ctx.fillStyle = '#5c3a1c'; ctx.fillRect(x, y, w, hh);
+    ctx.fillStyle = '#e0b077'; ctx.fillRect(x + 3, y + 3, w - 6, hh - 6);
+    ctx.fillStyle = ['#ffd0e0', '#cfe6ff', '#d8f0c0'][i % 3];
+    ctx.fillRect(x + 7, y + 7, w - 14, hh - 14);
+  }
+
+  /* 가구 실루엣 — 바닥에 붙여 놓아야 방처럼 보입니다.
+     전체를 반투명하게 깔아 "밟을 수 있는 것"과 확실히 구분합니다.
+     (불투명하게 그렸더니 배경 식탁과 전경 선반이 똑같아 보였습니다) */
+  ctx.save();
+  ctx.globalAlpha = 0.5;
+  const furSpan = 520;
+  for (let i = 0; i < 8; i++) {
+    const span = furSpan * 8;
+    const x = ((i * furSpan - camX * 0.55) % span + span) % span - 260;
+    const kind = i % 3;
+    if (kind === 0) {
+      /* 소파 */
+      const w = 190, hh = 78, y = ground - hh;
+      ctx.fillStyle = c.hill[2]; ctx.fillRect(x, y, w, hh);
+      ctx.fillStyle = c.hill[0]; ctx.fillRect(x + 4, y + 4, w - 8, 26);
+      ctx.fillStyle = c.hill[1]; ctx.fillRect(x + 4, y + 30, w - 8, hh - 34);
+      ctx.fillStyle = c.hill[2];
+      ctx.fillRect(x, y + 20, 22, hh - 20);
+      ctx.fillRect(x + w - 22, y + 20, 22, hh - 20);
+      ctx.fillRect(x + w / 2 - 2, y + 30, 4, hh - 34);
+    } else if (kind === 1) {
+      /* 책장 */
+      const w = 120, hh = 160, y = ground - hh;
+      ctx.fillStyle = c.hill[2]; ctx.fillRect(x, y, w, hh);
+      ctx.fillStyle = c.hill[1]; ctx.fillRect(x + 5, y + 5, w - 10, hh - 10);
+      for (let k = 0; k < 3; k++) {
+        const sy = y + 12 + k * ((hh - 20) / 3);
+        ctx.fillStyle = c.hill[2];
+        ctx.fillRect(x + 5, sy + (hh - 20) / 3 - 6, w - 10, 6);
+        for (let b = 0; b < 5; b++) {
+          ctx.fillStyle = ['#d9a79c', '#9fb2cc', '#d8c9a0', '#a8c4ac', '#bfaacc'][(k + b) % 5];
+          ctx.fillRect(x + 10 + b * 20, sy, 14, (hh - 20) / 3 - 8);
+        }
+      }
+    } else {
+      /* 식탁 */
+      const w = 160, hh = 92, y = ground - hh;
+      ctx.fillStyle = c.hill[2]; ctx.fillRect(x, y, w, 14);
+      ctx.fillStyle = c.hill[0]; ctx.fillRect(x + 3, y + 2, w - 6, 6);
+      ctx.fillStyle = c.hill[1];
+      ctx.fillRect(x + 14, y + 14, 12, hh - 14);
+      ctx.fillRect(x + w - 26, y + 14, 12, hh - 14);
+    }
+  }
+
+  ctx.restore();
+
+  /* 벽과 바닥이 만나는 걸레받이 */
+  ctx.fillStyle = c.hill[2];
+  ctx.fillRect(0, ground - 10, VIEW_W, 10);
+  ctx.fillStyle = c.hill[0];
+  ctx.fillRect(0, ground - 10, VIEW_W, 3);
+}
+
 /* 배경 — 그라디언트 대신 색 계단 + 디더링, 테두리 있는 언덕 */
 function drawBackground(ctx, camX, th, t) {
   const c = THEME[th] || THEME.day;
+  if (th === 'house') { drawHouseBackground(ctx, camX, c, t); return; }
   const bands = c.sky;
   const h = Math.ceil(VIEW_H / bands.length);
   for (let i = 0; i < bands.length; i++) {
@@ -1161,8 +1633,129 @@ const WALKER_FLAT = [
   '..jjjjjjjjjjjj..',
 ];
 
-function drawWalker(ctx, x, y, w, h, t, dir, squashed) {
-  const g = squashed ? WALKER_FLAT : WALKER[Math.floor(t / 12) % WALKER.length];
+
+/* ============================================================
+ *  1스테이지(집) 적
+ *   먼지뭉치 — 소파 밑에서 굴러 나온 먼지 덩어리 (걷는 적)
+ *   나방     — 형광등에 붙어 있던 나방 (나는 적)
+ *  밤톨이·날개새와 크기 규격이 같아서 충돌 상자를 그대로 씁니다.
+ * ========================================================== */
+
+/* 먼지뭉치 걷기 2프레임 (16 x 16).
+   두 번째 프레임은 몸 전체가 1칸 위로 올라가 통통 튀어 보입니다
+   (docs/PIXEL_STYLE.md 6번 규칙). */
+const DUST = [
+  [
+    '................',
+    '................',
+    '...JJ..JJ..JJ...',
+    '..JAAJJAAJJAAJ..',
+    '..JAAAAAAAAAAJ..',
+    '.JAAAAAAAAAAAAJ.',
+    '.JADDDDDDDDDDAJ.',
+    'JADDEEDDDDEEDDAJ',
+    'JADDEEDDDDEEDDAJ',
+    'JADDDDDWWDDDDDAJ',
+    '.JDDDDDDDDDDDDJ.',
+    '.JIIDDDDDDDDIIJ.',
+    '.JJIIIIIIIIIIJJ.',
+    '...JJIIIIIIJJ...',
+    '.....JJ..JJ.....',
+    '................',
+  ],
+  [
+    '................',
+    '...JJ..JJ..JJ...',
+    '..JAAJJAAJJAAJ..',
+    '..JAAAAAAAAAAJ..',
+    '.JAAAAAAAAAAAAJ.',
+    '.JADDDDDDDDDDAJ.',
+    'JADDEEDDDDEEDDAJ',
+    'JADDEEDDDDEEDDAJ',
+    'JADDDDDWWDDDDDAJ',
+    '.JDDDDDDDDDDDDJ.',
+    '.JIIDDDDDDDDIIJ.',
+    '.JJIIIIIIIIIIJJ.',
+    '...JJIIIIIIJJ...',
+    '....JJ..JJ......',
+    '................',
+    '................',
+  ],
+];
+
+/* 밟혀서 납작해진 먼지뭉치 */
+const DUST_FLAT = [
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '....JJJJJJJJ....',
+  '..JJAADDDDAAJJ..',
+  '..JDDDDDDDDDDJ..',
+  '..JIIIIIIIIIIJ..',
+  '..JJJJJJJJJJJJ..',
+];
+
+/* 나방 날갯짓 2프레임 (20 x 16). 좌우 대칭이라 반쪽을 뒤집어 만들었습니다. */
+const MOTH = [
+  [
+    '....................',
+    '......ll....ll......',
+    '.......ll..ll.......',
+    '........leel........',
+    '....llllEeeEllll....',
+    '.lllZZZlEeeElZZZlll.',
+    '.lZZZZZleeeelZZZZZl.',
+    'lZZffZZleeeelZZffZZl',
+    'lZffffZlfeeflZffffZl',
+    'lZZffZZlfeeflZZffZZl',
+    '.lZZZZZleeeelZZZZZl.',
+    '.llZZZZlfffflZZZZll.',
+    '...llZZlfffflZZll...',
+    '.....llllffllll.....',
+    '........llll........',
+    '....................',
+  ],
+  [
+    '....................',
+    '......ll....ll......',
+    '.......ll..ll.......',
+    '........leel........',
+    '.....lllEeeElll.....',
+    '...lllZlEeeElZlll...',
+    '...lZZZleeeelZZZl...',
+    '..llZZfleeeelfZZll..',
+    '..lZZfflfeeflffZZl..',
+    '..lZZfflfeeflffZZl..',
+    '..llZZZleeeelZZZll..',
+    '...lZZflfffflfZZl...',
+    '...llZflfffflfZll...',
+    '.....llllffllll.....',
+    '........llll........',
+    '....................',
+  ],
+];
+
+/* ─────────── 테마별 적 도트 고르기 ───────────
+ * 스테이지마다 적이 다릅니다. 도트만 갈아 끼우고 움직임(js/entities.js 의
+ * Walker / Flyer)은 그대로 씁니다. */
+const WALKER_SETS = {
+  house: { walk: DUST, flat: DUST_FLAT },
+};
+const FLYER_SETS = {
+  house: MOTH,
+};
+
+function drawWalker(ctx, x, y, w, h, t, dir, squashed, theme) {
+  const set = WALKER_SETS[theme] || { walk: WALKER, flat: WALKER_FLAT };
+  const g = squashed ? set.flat : set.walk[Math.floor(t / 12) % set.walk.length];
   const s = 2;
   const sw = g[0].length * s;
   ctx.fillStyle = 'rgba(0,0,0,.20)';
@@ -1212,8 +1805,9 @@ const FLYER = [
   ],
 ];
 
-function drawFlyer(ctx, x, y, w, h, t, dir) {
-  const g = FLYER[Math.floor(t / 10) % FLYER.length];
+function drawFlyer(ctx, x, y, w, h, t, dir, theme) {
+  const set = FLYER_SETS[theme] || FLYER;
+  const g = set[Math.floor(t / 10) % set.length];
   const s = 2;
   drawPixels(ctx, g, x + w / 2 - (g[0].length * s) / 2, y + h / 2 - (g.length * s) / 2, s, dir < 0);
 }
@@ -3126,6 +3720,191 @@ function drawNayul(ctx, x, y, w, h, o) {
 }
 
 
+/* ===== js/powers.js ===== */
+/* ============================================================
+ *  파워업 — 스테이지마다 다른 "기믹" (너구리마리오식)
+ *
+ *  스테이지 1 (집)      청소기 : 앞쪽 적을 빨아들여 없앱니다
+ *  스테이지 2 (길거리)  자동차 : (다음 작업)
+ *  스테이지 3 (한방병원) 침    : (다음 작업)
+ *
+ *  ─ 어떤 파워가 나올지는 js/levels.js 의 레벨 정의에 `power:` 로 적습니다.
+ *    같은 `*` 블록이 스테이지마다 다른 물건을 내놓습니다.
+ *  ─ 파워는 "맞으면 잃습니다". 마리오 불꽃과 같은 3단 구조입니다.
+ *      파워 있는 나율  →(맞음)→  큰 나율  →(맞음)→  작은 나율  →(맞음)→  죽음
+ *  ─ 주인공 도트(js/sprites/player.js) 는 건드리지 않습니다.
+ *    1904줄짜리 생성물이라 손에 물건을 쥔 그림을 새로 뽑으면 걷기 4프레임 ×
+ *    작은/큰 상태를 전부 다시 만들어야 합니다. 그래서 물건만 나율이 위에
+ *    덧그립니다. 자동차·침도 같은 방식으로 붙일 수 있습니다.
+ * ========================================================== */
+
+/* ─────────── 청소기 도트 ───────────
+ * 블록에서 나왔을 때 떠 있는 모습 (16 x 16, 배율 2 → 화면 32 x 32)
+ * 위로 뻗은 관 + 바닥의 넓은 흡입구. 작은 크기에서도 청소기로 읽히는 실루엣입니다. */
+const VACUUM = [
+  '..........@@@...',
+  '.........@ii@...',
+  '.........@im@...',
+  '........@iim@...',
+  '........@im@....',
+  '.......@iim@....',
+  '.......@im@.....',
+  '......@iim@.....',
+  '.....@@im@@.....',
+  '...@@@mmmm@@@...',
+  '..@iimmmmmmmm@..',
+  '..@immmmmmmmm@..',
+  '..@+mm++++mm+@..',
+  '..@++++++++++@..',
+  '..@@@@@@@@@@@@..',
+  '................',
+];
+
+/* 나율이가 손에 쥐고 있는 모습 (12 x 7, 배율 2 → 화면 24 x 14)
+ * 기본은 오른쪽을 보는 그림이고, 왼쪽을 볼 때는 뒤집어 그립니다. */
+const VACUUM_HELD = [
+  '..@@@@@.....',
+  '.@iimmm@....',
+  '@immmmmm@@@.',
+  '@immmmmmmm@@',
+  '@+mm+++++mm@',
+  '@+++++++++@@',
+  '.@@@@@@@@@@.',
+];
+
+/* 흡입 성능 — 여기 숫자만 바꾸면 난이도가 조절됩니다 */
+const VACUUM_RANGE = TILE * 3.2;   // 앞쪽으로 빨아들이는 거리 (약 102px)
+const VACUUM_PULL = 2.6;           // 적이 끌려오는 속도 (px/프레임)
+const VACUUM_EAT = 20;             // 이만큼 가까워지면 통 안으로 들어갑니다
+
+/* 청소기 노즐 끝 좌표 — 흡입 범위와 그림이 같은 점을 기준으로 삼아야
+   "빨리는 것처럼" 보입니다. 따로 계산하면 어긋납니다. */
+function vacuumNozzle(p) {
+  return {
+    x: p.facing > 0 ? p.x + p.w + 10 : p.x - 10,
+    y: p.y + p.h * 0.55,
+  };
+}
+
+const POWERS = {
+  vacuum: {
+    name: '청소기',
+    icon: VACUUM,
+
+    /* 흡입 범위 (사각형). 세로는 나율이 키보다 조금 넉넉하게 잡아
+       아이가 대충 겨눠도 빨립니다. */
+    zone(p) {
+      const h = p.h + 24;
+      return {
+        x: p.facing > 0 ? p.x + p.w : p.x - VACUUM_RANGE,
+        y: p.y - 12,
+        w: VACUUM_RANGE,
+        h,
+      };
+    },
+
+    /* 매 프레임 호출됩니다. pressing = 액션 버튼을 누르고 있는가 */
+    update(p, game, pressing) {
+      const on = !!pressing && !p.dying && p.controllable;
+
+      if (on !== p.actionOn) {
+        if (on) Sound.vacuumOn(); else Sound.vacuumOff();
+        p.actionOn = on;
+      }
+
+      if (!on) {
+        /* 버튼을 떼면 붙잡아 두었던 표시를 반드시 풀어야 합니다.
+           안 풀면 적이 그 자리에 얼어붙은 채로 남습니다. */
+        for (const e of game.entities) if (e.sucked) e.sucked = false;
+        return;
+      }
+
+      const zone = this.zone(p);
+      const noz = vacuumNozzle(p);
+      const cx = p.x + p.w / 2;
+      const cy = p.y + p.h * 0.55;
+
+      for (const e of game.entities) {
+        if (!e.alive) continue;
+        const suckable = (e instanceof Walker || e instanceof Flyer) ? !e.dead
+          : (e instanceof Coin);
+        if (!suckable) continue;
+
+        if (!overlaps(zone, e)) { e.sucked = false; continue; }
+        e.sucked = true;
+
+        const ex = e.x + e.w / 2, ey = e.y + e.h / 2;
+        const dx = cx - ex, dy = cy - ey;
+        const dist = Math.max(1, Math.hypot(dx, dy));
+
+        if (dist < VACUUM_EAT) {
+          /* 코인은 원래 충돌 처리에서 먹히므로 여기서는 끌어오기만 합니다 */
+          if (e instanceof Coin) continue;
+          e.alive = false;
+          game.score += SCORE.SUCK;
+          Sound.suck();
+          game.effects.push(new FloatText(ex, ey, '+' + SCORE.SUCK, '#b8f4ff'));
+          for (let i = 0; i < 5; i++) {
+            game.effects.push(new Particle(
+              noz.x, noz.y,
+              (Math.random() - 0.5) * 2.4, (Math.random() - 0.5) * 2.4,
+              i % 2 ? '#b8f4ff' : '#4fc8e8', 3, 16
+            ));
+          }
+          continue;
+        }
+
+        e.x += (dx / dist) * VACUUM_PULL;
+        e.y += (dy / dist) * VACUUM_PULL;
+      }
+
+      /* 빨려 들어가는 먼지 — 범위 안에서 노즐 쪽으로 흘러갑니다 */
+      if (game.t % 3 === 0) {
+        const far = p.facing > 0 ? zone.x + zone.w : zone.x;
+        game.effects.push(new SuckDust(
+          far - (Math.random() - 0.5) * 40,
+          zone.y + Math.random() * zone.h,
+          noz.x, noz.y
+        ));
+      }
+    },
+
+    /* 흡입 원뿔 — 나율이보다 뒤에 그려야 얼굴을 가리지 않습니다 */
+    drawBehind(ctx, p) {
+      if (!p.actionOn) return;
+      const noz = vacuumNozzle(p);
+      const dir = p.facing > 0 ? 1 : -1;
+      const tip = noz.x + dir * VACUUM_RANGE;
+      const spread = p.h * 0.5;
+      ctx.save();
+      for (let i = 0; i < 3; i++) {
+        const k = (i + (p.t * 0.06) % 1) / 3;
+        ctx.globalAlpha = 0.38 * (1 - k);
+        ctx.fillStyle = i % 2 ? '#b8f4ff' : '#4fc8e8';
+        ctx.beginPath();
+        ctx.moveTo(noz.x, noz.y - 5);
+        ctx.lineTo(noz.x + (tip - noz.x) * (0.4 + k * 0.6), noz.y - spread * (0.4 + k));
+        ctx.lineTo(noz.x + (tip - noz.x) * (0.4 + k * 0.6), noz.y + spread * (0.4 + k));
+        ctx.lineTo(noz.x, noz.y + 5);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
+    },
+
+    /* 손에 쥔 청소기 */
+    drawHeld(ctx, p) {
+      const s = 2;
+      const w = VACUUM_HELD[0].length * s;
+      const shake = p.actionOn ? (p.t % 4 < 2 ? 1 : 0) : 0;
+      const x = p.facing > 0 ? p.x + p.w - 10 : p.x - w + 10;
+      const y = p.y + p.h * 0.45 + shake;
+      drawPixels(ctx, VACUUM_HELD, x, y, s, p.facing < 0);
+    },
+  },
+};
+
+
 /* ===== js/entities.js ===== */
 /* ============================================================
  *  물리 / 충돌 / 등장인물
@@ -3234,6 +4013,8 @@ function overlaps(a, b) {
 class Player {
   constructor(x, y) {
     this.big = false;
+    this.power = null;     /* 'vacuum' 같은 파워업 종류. 없으면 null */
+    this.actionOn = false; /* 액션 버튼을 누르고 있는 중인가 */
     this.w = 24; this.h = 56;
     this.x = x; this.y = y - this.h;
     this.vx = 0; this.vy = 0;
@@ -3259,6 +4040,18 @@ class Player {
     this.w = big ? 28 : 24;
     this.h = big ? 64 : 56;
     this.y = bottom - this.h;
+  }
+
+  /* 파워업을 얻거나(kind) 잃습니다(null).
+     마리오 불꽃과 같이 파워를 얻으면 큰 상태도 함께 됩니다. */
+  setPower(kind) {
+    this.power = kind || null;
+    if (kind) this.setBig(true);
+    else if (this.actionOn) { Sound.vacuumOff(); this.actionOn = false; }
+    const def = kind ? POWERS[kind] : null;
+    if (typeof Input !== 'undefined' && Input.setActionLabel) {
+      Input.setActionLabel(def ? def.name : '액션');
+    }
   }
 
   get state() {
@@ -3346,6 +4139,13 @@ class Player {
       onBump: (c, r) => game.hitBlock(c, r, this),
     });
 
+    /* 파워업 사용 (청소기 흡입 등).
+       적을 끌어당기는 처리가 여기서 일어나야 합니다. 이 뒤에 각 적의 update 가
+       돌면서 끌려온 위치를 기준으로 움직이기 때문입니다. */
+    const pw = this.power ? POWERS[this.power] : null;
+    if (pw && pw.update) pw.update(this, game, Input.down.action);
+    else if (this.actionOn) { Sound.vacuumOff(); this.actionOn = false; }
+
     /* 가시에 닿았는지 */
     const c0 = Math.floor((this.x + 4) / TILE);
     const c1 = Math.floor((this.x + this.w - 5) / TILE);
@@ -3362,7 +4162,13 @@ class Player {
   }
 
   draw(ctx) {
+    const pw = this.power ? POWERS[this.power] : null;
+    /* 흡입 원뿔 같은 효과는 나율이보다 먼저 그려야 얼굴을 가리지 않습니다 */
+    if (pw && pw.drawBehind) pw.drawBehind(ctx, this);
+
+    /* 무적 중에는 깜빡입니다. 손에 든 물건도 같이 깜빡여야 따로 놀지 않습니다. */
     if (this.invuln > 0 && Math.floor(this.invuln / 4) % 2 === 1) return;
+
     drawNayul(ctx, this.x, this.y, this.w, this.h, {
       facing: this.facing,
       state: this.state,
@@ -3372,12 +4178,14 @@ class Player {
       big: this.big,
       blink: this.blinkTimer < 0,
     });
+    if (pw && pw.drawHeld) pw.drawHeld(ctx, this);
   }
 }
 
 /* ─────────── 걸어다니는 적: 밤톨이 ─────────── */
 class Walker {
-  constructor(col, row) {
+  constructor(col, row, theme) {
+    this.theme = theme;     /* 스테이지마다 도트가 다릅니다 (집=먼지뭉치) */
     this.w = 24; this.h = 24;
     this.x = col * TILE + 4;
     this.y = row * TILE + TILE - this.h;
@@ -3387,6 +4195,7 @@ class Walker {
     this.dead = false;
     this.squash = 0;
     this.alive = true;
+    this.sucked = false;   /* 청소기에 빨려 가는 중 */
   }
 
   update(level) {
@@ -3396,6 +4205,10 @@ class Walker {
       if (this.squash <= 0) this.alive = false;
       return;
     }
+    /* 청소기에 빨려 가는 중에는 스스로 걷지 않습니다.
+       (이 update 가 청소기의 끌어당김 뒤에 돌기 때문에, 여기서 안 막으면
+        끌어온 위치가 매 프레임 되돌려집니다) */
+    if (this.sucked) return;
 
     this.x += this.vx;
     if (collideX(this, level)) this.vx = -Math.sign(this.vx || 1) * 0.85;
@@ -3419,13 +4232,15 @@ class Walker {
   stomp() { this.dead = true; this.squash = 26; this.vx = 0; }
 
   draw(ctx) {
-    drawWalker(ctx, this.x, this.y, this.w, this.h, this.t, Math.sign(this.vx) || 1, this.dead);
+    drawWalker(ctx, this.x, this.y, this.w, this.h, this.t,
+      Math.sign(this.vx) || 1, this.dead, this.theme);
   }
 }
 
 /* ─────────── 날아다니는 적: 날개새 ─────────── */
 class Flyer {
-  constructor(col, row) {
+  constructor(col, row, theme) {
+    this.theme = theme;     /* 스테이지마다 도트가 다릅니다 (집=나방) */
     this.w = 26; this.h = 22;
     this.x = col * TILE + 3;
     this.baseY = row * TILE + 5;
@@ -3438,6 +4253,7 @@ class Flyer {
     this.squash = 0;
     this.alive = true;
     this.vy = 0;
+    this.sucked = false;   /* 청소기에 빨려 가는 중 */
   }
 
   update(level) {
@@ -3449,6 +4265,7 @@ class Flyer {
       if (this.squash <= 0 || this.y > VIEW_H + 60) this.alive = false;
       return;
     }
+    if (this.sucked) return;   /* 청소기에 빨려 가는 중 */
     this.x += this.vx;
     if (Math.abs(this.x - this.startX) > this.range) this.vx = -this.vx;
     if (collideX(this, level)) this.vx = this.vx === 0 ? 1.15 : -Math.sign(this.vx) * 1.15;
@@ -3461,11 +4278,11 @@ class Flyer {
     if (this.dead) {
       ctx.save();
       ctx.globalAlpha = 0.7;
-      drawFlyer(ctx, this.x, this.y, this.w, this.h, this.t, Math.sign(this.vx) || 1);
+      drawFlyer(ctx, this.x, this.y, this.w, this.h, this.t, Math.sign(this.vx) || 1, this.theme);
       ctx.restore();
       return;
     }
-    drawFlyer(ctx, this.x, this.y, this.w, this.h, this.t, Math.sign(this.vx) || 1);
+    drawFlyer(ctx, this.x, this.y, this.w, this.h, this.t, Math.sign(this.vx) || 1, this.theme);
   }
 }
 
@@ -3516,6 +4333,41 @@ class HeartItem {
   draw(ctx) { drawHeart(ctx, this.x + this.w / 2, this.y + this.h / 2, 11, this.t); }
 }
 
+/* ─────────── 스테이지 파워업 아이템 (청소기 / 자동차 / 침) ───────────
+ * 블록에서 나와 한 칸 떠오른 뒤 그 자리에 있습니다. HeartItem 과 같은 동작입니다. */
+class PowerItem {
+  constructor(col, row, kind) {
+    this.kind = kind;
+    this.w = 28; this.h = 28;
+    this.x = col * TILE + 2;
+    this.y = row * TILE + 4;
+    this.targetY = this.y - TILE;
+    this.t = 0;
+    this.alive = true;
+  }
+  update() {
+    this.t++;
+    if (this.y > this.targetY) this.y -= 1.2;
+  }
+  draw(ctx) {
+    const def = POWERS[this.kind];
+    if (!def || !def.icon) return;
+    const s = 2;
+    const bob = Math.round(Math.sin(this.t * 0.09)) * 2;
+    /* 반짝이는 뒷광 — 블록에서 나온 게 특별한 물건임을 알려 줍니다 */
+    ctx.save();
+    ctx.globalAlpha = 0.3 + Math.sin(this.t * 0.12) * 0.12;
+    ctx.fillStyle = '#b8f4ff';
+    ctx.beginPath();
+    ctx.arc(this.x + this.w / 2, this.y + this.h / 2 + bob, 18, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    drawPixels(ctx, def.icon,
+      this.x + this.w / 2 - (def.icon[0].length * s) / 2,
+      this.y + this.h / 2 - (def.icon.length * s) / 2 + bob, s, false);
+  }
+}
+
 /* ─────────── 효과: 파편, 점수 글자 ─────────── */
 class Particle {
   constructor(x, y, vx, vy, color, size, life) {
@@ -3533,6 +4385,34 @@ class Particle {
   draw(ctx) {
     ctx.fillStyle = this.color;
     ctx.fillRect(this.x, this.y, this.size, this.size);
+  }
+}
+
+/* 청소기에 빨려 들어가는 먼지.
+ * Particle 은 중력으로 아래로 떨어져서 "빨리는" 느낌이 안 납니다.
+ * 그래서 목표 지점(노즐)으로 가속하며 날아가는 전용 효과를 따로 둡니다. */
+class SuckDust {
+  constructor(x, y, tx, ty) {
+    this.x = x; this.y = y;
+    this.tx = tx; this.ty = ty;
+    this.life = 26;
+    this.size = 2 + Math.floor(Math.random() * 3);
+    this.alive = true;
+  }
+  update() {
+    const dx = this.tx - this.x, dy = this.ty - this.y;
+    const d = Math.max(1, Math.hypot(dx, dy));
+    const sp = Math.min(9, 60 / d + 2.4);
+    this.x += (dx / d) * sp;
+    this.y += (dy / d) * sp;
+    if (--this.life <= 0 || d < 8) this.alive = false;
+  }
+  draw(ctx) {
+    ctx.save();
+    ctx.globalAlpha = Math.min(0.75, this.life / 16);
+    ctx.fillStyle = this.life % 4 < 2 ? '#e8f8ff' : '#b8f4ff';
+    ctx.fillRect(Math.round(this.x), Math.round(this.y), this.size, this.size);
+    ctx.restore();
   }
 }
 
@@ -3613,6 +4493,7 @@ const Game = {
     const level = {
       grid, w: width, h: ROWS,
       theme: def.theme, name: def.name,
+      power: def.power || null,     /* `*` 블록에서 나올 파워업 종류 */
       goal: { col: width - 4, row: 13 },
     };
 
@@ -3625,8 +4506,8 @@ const Game = {
       for (let c = 0; c < width; c++) {
         const ch = grid[r][c];
         if (ch === 'P') { start = { col: c, row: r }; grid[r][c] = ' '; }
-        else if (ch === 'E') { this.entities.push(new Walker(c, r)); grid[r][c] = ' '; }
-        else if (ch === 'F') { this.entities.push(new Flyer(c, r)); grid[r][c] = ' '; }
+        else if (ch === 'E') { this.entities.push(new Walker(c, r, def.theme)); grid[r][c] = ' '; }
+        else if (ch === 'F') { this.entities.push(new Flyer(c, r, def.theme)); grid[r][c] = ' '; }
         else if (ch === 'o') { this.entities.push(new Coin(c, r)); grid[r][c] = ' '; }
         else if (ch === 'G') { level.goal = { col: c, row: r }; grid[r][c] = ' '; }
       }
@@ -3640,6 +4521,8 @@ const Game = {
     this.timeTick = 0;
     this.deadTimer = 0;
     this.clearTimer = 0;
+    if (Input.setActionLabel) Input.setActionLabel('액션');
+    Sound.vacuumOff();
   },
 
   startGame() {
@@ -3667,7 +4550,13 @@ const Game = {
         break;
 
       case 'play':
-        if (Input.pressed.pause) { this.state = 'pause'; Sound.pauseBgm(); break; }
+        if (Input.pressed.pause) {
+          this.state = 'pause';
+          this.player.actionOn = false;
+          Sound.vacuumOff();
+          Sound.pauseBgm();
+          break;
+        }
         if (Input.pressed.restart) { this.killPlayer(); break; }
         this.updatePlay();
         break;
@@ -3748,6 +4637,19 @@ const Game = {
           e.alive = false;
           this.collectCoin(e.x + e.w / 2, e.y);
         }
+      } else if (e instanceof PowerItem) {
+        if (overlaps(p, e)) {
+          e.alive = false;
+          const def = POWERS[e.kind];
+          this.score += SCORE.POWERUP;
+          Sound.powerup();
+          p.setPower(e.kind);
+          p.invuln = Math.max(p.invuln, 30);
+          this.effects.push(new FloatText(e.x + e.w / 2, e.y, def ? def.name + ' 획득!' : '+' + SCORE.POWERUP, '#b8f4ff'));
+          for (let i = 0; i < 14; i++) {
+            this.effects.push(new Particle(e.x + 14, e.y + 12, (Math.random() - 0.5) * 6, -Math.random() * 5, i % 2 ? '#b8f4ff' : '#4fc8e8', 4, 34));
+          }
+        }
       } else if (e instanceof HeartItem) {
         if (overlaps(p, e)) {
           e.alive = false;
@@ -3762,6 +4664,9 @@ const Game = {
         }
       } else if (e instanceof Walker || e instanceof Flyer) {
         if (e.dead || !overlaps(p, e)) continue;
+        /* 청소기로 빨아들이는 중인 적은 나율이를 해치지 않습니다.
+           이게 없으면 빨아들이다가 자기가 맞아 죽습니다. */
+        if (e.sucked) continue;
         /* 밟기 판정: 떨어지는 중이고, 이번 프레임 직전에 적보다 위에 있었으면 밟은 것 */
         const stomping = p.vy > 0.6 &&
           ((p.prevBottom !== undefined && p.prevBottom <= e.y + 10) ||
@@ -3825,6 +4730,19 @@ const Game = {
       this.bumps[key] = 10;
       this.effects.push(new PopCoin(px, py - 6));
       this.collectCoin(px, py - 10);
+    } else if (ch === '*') {
+      /* 스테이지 파워업. 어떤 물건이 나올지는 레벨 정의의 power 가 정합니다 */
+      const kind = this.level.power;
+      this.level.grid[r][c] = 'X';
+      this.bumps[key] = 10;
+      if (kind && POWERS[kind]) {
+        this.entities.push(new PowerItem(c, r - 1, kind));
+        Sound.powerup();
+      } else {
+        /* 파워가 정해지지 않은 스테이지에서는 하트가 나옵니다 (빈 블록 방지) */
+        this.entities.push(new HeartItem(c, r - 1));
+        Sound.powerup();
+      }
     } else if (ch === '!') {
       this.level.grid[r][c] = 'X';
       this.bumps[key] = 10;
@@ -3855,7 +4773,15 @@ const Game = {
   hurtPlayer() {
     const p = this.player;
     if (p.invuln > 0 || p.dying) return;
-    if (p.big) {
+    /* 3단 구조: 파워 → 큰 나율 → 작은 나율 → 죽음 (마리오 불꽃과 같은 방식) */
+    if (p.power) {
+      const lost = POWERS[p.power] ? POWERS[p.power].name : '파워';
+      p.setPower(null);
+      p.invuln = PHYS.INVULN;
+      Sound.hurt();
+      this.effects.push(new FloatText(p.x + p.w / 2, p.y, lost + '을 놓쳤어요!', '#b8f4ff'));
+      for (const e of this.entities) if (e.sucked) e.sucked = false;
+    } else if (p.big) {
       p.setBig(false);
       p.invuln = PHYS.INVULN;
       Sound.hurt();
@@ -3874,6 +4800,8 @@ const Game = {
     p.vx = 0;
     this.state = 'dead';
     this.deadTimer = 0;
+    p.actionOn = false;
+    Sound.vacuumOff();
     Sound.stopBgm();
     Sound.die();
   },
@@ -3884,6 +4812,8 @@ const Game = {
     this.clearTimer = 0;
     this.player.controllable = false;
     this.player.vx = 0;
+    this.player.actionOn = false;
+    Sound.vacuumOff();
     Sound.stopBgm();
     Sound.clear();
     for (let i = 0; i < 30; i++) {
@@ -3928,7 +4858,7 @@ const Game = {
     }
 
     /* 골 깃발 */
-    drawGoal(ctx, lv.goal.col * TILE, lv.goal.row * TILE, this.t);
+    drawGoal(ctx, lv.goal.col * TILE, lv.goal.row * TILE, this.t, lv.theme);
 
     /* 등장물 */
     this.entities.forEach((e) => e.draw(ctx));
@@ -3983,6 +4913,16 @@ const Game = {
 
     for (let i = 0; i < Math.min(this.lives, 6); i++) {
       drawHeart(ctx, VIEW_W - 150 - i * 26, 20, 9, 0);
+    }
+
+    /* 지금 가지고 있는 파워업 */
+    const pw = this.player && this.player.power ? POWERS[this.player.power] : null;
+    if (pw && pw.icon) {
+      drawPixels(ctx, pw.icon, 250, 4, 2, false);
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#b8f4ff';
+      ctx.font = 'bold 15px sans-serif';
+      ctx.fillText(pw.name, 286, 21);
     }
     ctx.restore();
   },

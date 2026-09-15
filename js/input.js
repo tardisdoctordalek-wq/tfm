@@ -3,7 +3,7 @@
  * ========================================================== */
 
 const Input = {
-  down: { left: false, right: false, jump: false, run: false, crouch: false },
+  down: { left: false, right: false, jump: false, run: false, crouch: false, action: false },
   pressed: {},          // 이번 프레임에 "새로" 눌린 키
   anyPressed: false,
 
@@ -13,6 +13,13 @@ const Input = {
     ArrowDown: 'crouch', KeyS: 'crouch',
     Space: 'jump', ArrowUp: 'jump', KeyW: 'jump', KeyZ: 'jump',
     ShiftLeft: 'run', ShiftRight: 'run', KeyX: 'run',
+    KeyC: 'action', KeyF: 'action',   /* 청소기·자동차·침 같은 파워업 사용 */
+  },
+
+  /* 터치 액션 버튼의 글자를 파워업 이름으로 바꿉니다.
+     아이가 지금 무엇을 쓰는 버튼인지 알아볼 수 있게 하기 위해서입니다. */
+  setActionLabel(text) {
+    if (this._actionBtn) this._actionBtn.textContent = text || '액션';
   },
 
   init() {
@@ -66,6 +73,8 @@ const Input = {
       btn.addEventListener('pointerleave', off);
       btn.addEventListener('contextmenu', (e) => e.preventDefault());
     });
+
+    this._actionBtn = pad.querySelector('.btn.act');
 
     // 캔버스를 탭해도 시작/진행되도록
     const canvas = document.getElementById('game');

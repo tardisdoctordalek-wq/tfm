@@ -105,6 +105,8 @@ function overlaps(a, b) {
 class Player {
   constructor(x, y) {
     this.big = false;
+    this.power = null;     /* 'vacuum' 같은 파워업 종류. 없으면 null */
+    this.actionOn = false; /* 액션 버튼을 누르고 있는 중인가 */
     this.w = 24; this.h = 56;
     this.x = x; this.y = y - this.h;
     this.vx = 0; this.vy = 0;
@@ -130,6 +132,18 @@ class Player {
     this.w = big ? 28 : 24;
     this.h = big ? 64 : 56;
     this.y = bottom - this.h;
+  }
+
+  /* 파워업을 얻거나(kind) 잃습니다(null).
+     마리오 불꽃과 같이 파워를 얻으면 큰 상태도 함께 됩니다. */
+  setPower(kind) {
+    this.power = kind || null;
+    if (kind) this.setBig(true);
+    else if (this.actionOn) { Sound.vacuumOff(); this.actionOn = false; }
+    const def = kind ? POWERS[kind] : null;
+    if (typeof Input !== 'undefined' && Input.setActionLabel) {
+      Input.setActionLabel(def ? def.name : '액션');
+    }
   }
 
   get state() {
@@ -217,6 +231,13 @@ class Player {
       onBump: (c, r) => game.hitBlock(c, r, this),
     });
 
+    /* 파워업 사용 (청소기 흡입 등).
+       적을 끌어당기는 처리가 여기서 일어나야 합니다. 이 뒤에 각 적의 update 가
+       돌면서 끌려온 위치를 기준으로 움직이기 때문입니다. */
+    const pw = this.power ? POWERS[this.power] : null;
+    if (pw && pw.update) pw.update(this, game, Input.down.action);
+    else if (this.actionOn) { Sound.vacuumOff(); this.actionOn = false; }
+
     /* 가시에 닿았는지 */
     const c0 = Math.floor((this.x + 4) / TILE);
     const c1 = Math.floor((this.x + this.w - 5) / TILE);
@@ -233,7 +254,13 @@ class Player {
   }
 
   draw(ctx) {
+    const pw = this.power ? POWERS[this.power] : null;
+    /* 흡입 원뿔 같은 효과는 나율이보다 먼저 그려야 얼굴을 가리지 않습니다 */
+    if (pw && pw.drawBehind) pw.drawBehind(ctx, this);
+
+    /* 무적 중에는 깜빡입니다. 손에 든 물건도 같이 깜빡여야 따로 놀지 않습니다. */
     if (this.invuln > 0 && Math.floor(this.invuln / 4) % 2 === 1) return;
+
     drawNayul(ctx, this.x, this.y, this.w, this.h, {
       facing: this.facing,
       state: this.state,
@@ -243,12 +270,14 @@ class Player {
       big: this.big,
       blink: this.blinkTimer < 0,
     });
+    if (pw && pw.drawHeld) pw.drawHeld(ctx, this);
   }
 }
 
 /* ─────────── 걸어다니는 적: 밤톨이 ─────────── */
 class Walker {
-  constructor(col, row) {
+  constructor(col, row, theme) {
+    this.theme = theme;     /* 스테이지마다 도트가 다릅니다 (집=먼지뭉치) */
     this.w = 24; this.h = 24;
     this.x = col * TILE + 4;
     this.y = row * TILE + TILE - this.h;
@@ -258,6 +287,7 @@ class Walker {
     this.dead = false;
     this.squash = 0;
     this.alive = true;
+    this.sucked = false;   /* 청소기에 빨려 가는 중 */
   }
 
   update(level) {
@@ -267,6 +297,10 @@ class Walker {
       if (this.squash <= 0) this.alive = false;
       return;
     }
+    /* 청소기에 빨려 가는 중에는 스스로 걷지 않습니다.
+       (이 update 가 청소기의 끌어당김 뒤에 돌기 때문에, 여기서 안 막으면
+        끌어온 위치가 매 프레임 되돌려집니다) */
+    if (this.sucked) return;
 
     this.x += this.vx;
     if (collideX(this, level)) this.vx = -Math.sign(this.vx || 1) * 0.85;
@@ -290,13 +324,15 @@ class Walker {
   stomp() { this.dead = true; this.squash = 26; this.vx = 0; }
 
   draw(ctx) {
-    drawWalker(ctx, this.x, this.y, this.w, this.h, this.t, Math.sign(this.vx) || 1, this.dead);
+    drawWalker(ctx, this.x, this.y, this.w, this.h, this.t,
+      Math.sign(this.vx) || 1, this.dead, this.theme);
   }
 }
 
 /* ─────────── 날아다니는 적: 날개새 ─────────── */
 class Flyer {
-  constructor(col, row) {
+  constructor(col, row, theme) {
+    this.theme = theme;     /* 스테이지마다 도트가 다릅니다 (집=나방) */
     this.w = 26; this.h = 22;
     this.x = col * TILE + 3;
     this.baseY = row * TILE + 5;
@@ -309,6 +345,7 @@ class Flyer {
     this.squash = 0;
     this.alive = true;
     this.vy = 0;
+    this.sucked = false;   /* 청소기에 빨려 가는 중 */
   }
 
   update(level) {
@@ -320,6 +357,7 @@ class Flyer {
       if (this.squash <= 0 || this.y > VIEW_H + 60) this.alive = false;
       return;
     }
+    if (this.sucked) return;   /* 청소기에 빨려 가는 중 */
     this.x += this.vx;
     if (Math.abs(this.x - this.startX) > this.range) this.vx = -this.vx;
     if (collideX(this, level)) this.vx = this.vx === 0 ? 1.15 : -Math.sign(this.vx) * 1.15;
@@ -332,11 +370,11 @@ class Flyer {
     if (this.dead) {
       ctx.save();
       ctx.globalAlpha = 0.7;
-      drawFlyer(ctx, this.x, this.y, this.w, this.h, this.t, Math.sign(this.vx) || 1);
+      drawFlyer(ctx, this.x, this.y, this.w, this.h, this.t, Math.sign(this.vx) || 1, this.theme);
       ctx.restore();
       return;
     }
-    drawFlyer(ctx, this.x, this.y, this.w, this.h, this.t, Math.sign(this.vx) || 1);
+    drawFlyer(ctx, this.x, this.y, this.w, this.h, this.t, Math.sign(this.vx) || 1, this.theme);
   }
 }
 
@@ -387,6 +425,41 @@ class HeartItem {
   draw(ctx) { drawHeart(ctx, this.x + this.w / 2, this.y + this.h / 2, 11, this.t); }
 }
 
+/* ─────────── 스테이지 파워업 아이템 (청소기 / 자동차 / 침) ───────────
+ * 블록에서 나와 한 칸 떠오른 뒤 그 자리에 있습니다. HeartItem 과 같은 동작입니다. */
+class PowerItem {
+  constructor(col, row, kind) {
+    this.kind = kind;
+    this.w = 28; this.h = 28;
+    this.x = col * TILE + 2;
+    this.y = row * TILE + 4;
+    this.targetY = this.y - TILE;
+    this.t = 0;
+    this.alive = true;
+  }
+  update() {
+    this.t++;
+    if (this.y > this.targetY) this.y -= 1.2;
+  }
+  draw(ctx) {
+    const def = POWERS[this.kind];
+    if (!def || !def.icon) return;
+    const s = 2;
+    const bob = Math.round(Math.sin(this.t * 0.09)) * 2;
+    /* 반짝이는 뒷광 — 블록에서 나온 게 특별한 물건임을 알려 줍니다 */
+    ctx.save();
+    ctx.globalAlpha = 0.3 + Math.sin(this.t * 0.12) * 0.12;
+    ctx.fillStyle = '#b8f4ff';
+    ctx.beginPath();
+    ctx.arc(this.x + this.w / 2, this.y + this.h / 2 + bob, 18, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    drawPixels(ctx, def.icon,
+      this.x + this.w / 2 - (def.icon[0].length * s) / 2,
+      this.y + this.h / 2 - (def.icon.length * s) / 2 + bob, s, false);
+  }
+}
+
 /* ─────────── 효과: 파편, 점수 글자 ─────────── */
 class Particle {
   constructor(x, y, vx, vy, color, size, life) {
@@ -404,6 +477,34 @@ class Particle {
   draw(ctx) {
     ctx.fillStyle = this.color;
     ctx.fillRect(this.x, this.y, this.size, this.size);
+  }
+}
+
+/* 청소기에 빨려 들어가는 먼지.
+ * Particle 은 중력으로 아래로 떨어져서 "빨리는" 느낌이 안 납니다.
+ * 그래서 목표 지점(노즐)으로 가속하며 날아가는 전용 효과를 따로 둡니다. */
+class SuckDust {
+  constructor(x, y, tx, ty) {
+    this.x = x; this.y = y;
+    this.tx = tx; this.ty = ty;
+    this.life = 26;
+    this.size = 2 + Math.floor(Math.random() * 3);
+    this.alive = true;
+  }
+  update() {
+    const dx = this.tx - this.x, dy = this.ty - this.y;
+    const d = Math.max(1, Math.hypot(dx, dy));
+    const sp = Math.min(9, 60 / d + 2.4);
+    this.x += (dx / d) * sp;
+    this.y += (dy / d) * sp;
+    if (--this.life <= 0 || d < 8) this.alive = false;
+  }
+  draw(ctx) {
+    ctx.save();
+    ctx.globalAlpha = Math.min(0.75, this.life / 16);
+    ctx.fillStyle = this.life % 4 < 2 ? '#e8f8ff' : '#b8f4ff';
+    ctx.fillRect(Math.round(this.x), Math.round(this.y), this.size, this.size);
+    ctx.restore();
   }
 }
 
